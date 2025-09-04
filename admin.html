@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Lucky Draw</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f0f4f8;
+            color: #1a202c;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #2c5282;
+        }
+        .password-form {
+            text-align: center;
+        }
+        .password-form input {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            margin-right: 0.5rem;
+        }
+        .password-form button {
+            background-color: #2c5282;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .password-form button:hover {
+            background-color: #2a4365;
+        }
+        .admin-panel {
+            display: none;
+        }
+        .section {
+            margin-bottom: 2.5rem;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c5282;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e0;
+        }
+        .btn-primary {
+            background-color: #3182ce;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2b6cb0;
+        }
+        .btn-secondary {
+            background-color: #a0aec0;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .list-item-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .list-item-actions button {
+            background-color: #e53e3e;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background-color: transparent;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+            color: #718096;
+        }
+        .tab-button.active {
+            color: #2c5282;
+            border-bottom: 2px solid #2c5282;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Admin Lucky Draw</h1>
+
+        <div id="loginSection">
+            <h2 class="section-title">Login Admin</h2>
+            <div class="password-form">
+                <input type="password" id="adminPassword" placeholder="Masukkan Password">
+                <button id="loginBtn">Masuk</button>
+            </div>
+            <p id="loginMessage" class="text-center text-red-500 mt-2"></p>
+        </div>
+
+        <div id="adminPanel" class="admin-panel">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="participants">Kelola Peserta & Reset</button>
+                <button class="tab-button" data-tab="prizes">Kelola Hadiah Biasa</button>
+                <button class="tab-button" data-tab="grand-prizes">Kelola Grand Prizes</button>
+            </div>
+
+            <!-- Tab: Kelola Peserta & Reset -->
+            <div id="participants-tab" class="tab-content active">
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Tambah Peserta</h3>
+                    <div class="form-group">
+                        <label for="participantName">Nama Peserta</label>
+                        <input type="text" id="participantName" placeholder="Masukkan nama peserta">
+                    </div>
+                    <button id="addParticipantBtn" class="btn-primary">Tambah Peserta</button>
+                </div>
+                
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Daftar Peserta</h3>
+                    <div id="participantList">
+                        <!-- List akan diisi oleh JS -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Aksi Reset</h3>
+                    <p class="text-sm text-gray-600 mb-2">Gunakan fitur ini untuk mereset data undian untuk uji coba.</p>
+                    <div class="flex space-x-4">
+                        <button id="resetWinnersBtn" class="btn-secondary">Reset Semua Pemenang</button>
+                        <button id="resetAllDataBtn" class="btn-secondary">Hapus Semua Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Kelola Hadiah Biasa -->
+            <div id="prizes-tab" class="tab-content">
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Tambah Hadiah Biasa</h3>
+                    <div class="form-group">
+                        <label for="prizeName">Nama Hadiah</label>
+                        <input type="text" id="prizeName" placeholder="Contoh: Voucher Belanja">
+                    </div>
+                    <div class="form-group">
+                        <label for="prizeImage">URL Gambar Hadiah</label>
+                        <input type="text" id="prizeImage" placeholder="URL Gambar (cth: https://...)">
+                    </div>
+                    <div class="form-group">
+                        <label for="prizeQuota">Kuota (Jumlah Pemenang)</label>
+                        <input type="number" id="prizeQuota" min="1" value="1">
+                    </div>
+                    <button id="addPrizeBtn" class="btn-primary">Tambah Hadiah</button>
+                </div>
+                
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Daftar Hadiah Biasa</h3>
+                    <div id="prizesList">
+                        <!-- List akan diisi oleh JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Kelola Grand Prizes -->
+            <div id="grand-prizes-tab" class="tab-content">
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Kelola Grand Prizes</h3>
+                    <p class="text-sm text-gray-600 mb-4">Atur hadiah utama untuk juara 1, 2, dan 3.</p>
+                    <form id="grandPrizeForm" class="space-y-4">
+                        <!-- Juara 1 -->
+                        <div class="form-group">
+                            <label for="grandPrize1Name">Nama Hadiah Juara 1</label>
+                            <input type="text" id="grandPrize1Name" placeholder="Contoh: Mobil Elektrik">
+                        </div>
+                        <div class="form-group">
+                            <label for="grandPrize1Image">URL Gambar Juara 1</label>
+                            <input type="text" id="grandPrize1Image" placeholder="URL Gambar (cth: https://...)">
+                        </div>
+                        <!-- Juara 2 -->
+                        <div class="form-group">
+                            <label for="grandPrize2Name">Nama Hadiah Juara 2</label>
+                            <input type="text" id="grandPrize2Name" placeholder="Contoh: Liburan ke Bali">
+                        </div>
+                        <div class="form-group">
+                            <label for="grandPrize2Image">URL Gambar Juara 2</label>
+                            <input type="text" id="grandPrize2Image" placeholder="URL Gambar (cth: https://...)">
+                        </div>
+                        <!-- Juara 3 -->
+                        <div class="form-group">
+                            <label for="grandPrize3Name">Nama Hadiah Juara 3</label>
+                            <input type="text" id="grandPrize3Name" placeholder="Contoh: Uang Tunai">
+                        </div>
+                        <div class="form-group">
+                            <label for="grandPrize3Image">URL Gambar Juara 3</label>
+                            <input type="text" id="grandPrize3Image" placeholder="URL Gambar (cth: https://...)">
+                        </div>
+                        <button type="submit" id="saveGrandPrizesBtn" class="btn-primary w-full">Simpan Grand Prizes</button>
+                    </form>
+                </div>
+                
+                <div class="section">
+                    <h3 class="font-bold text-lg mb-2">Daftar Grand Prizes</h3>
+                    <div id="grandPrizesList">
+                        <!-- List akan diisi oleh JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, onSnapshot, query, where, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+        // Firebase Config
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
+            authDomain: "fundayluckydraw2025.firebaseapp.com",
+            projectId: "fundayluckydraw2025",
+            storageBucket: "fundayluckydraw2025.firebasestorage.app",
+            messagingSenderId: "357768542683",
+            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
+            measurementId: "G-RXN0VTGZ8L"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const analytics = getAnalytics(app);
+
+        let userIsReady = false;
+        let userId = '';
+
+        async function authenticate() {
+            try {
+                await signInAnonymously(auth);
+                userId = auth.currentUser.uid;
+                userIsReady = true;
+                console.log("Authentication successful, user ID:", userId);
+            } catch (error) {
+                console.error("Firebase authentication failed:", error);
+            }
+        }
+
+        const ADMIN_PASSWORD = "tiian";
+        const loginSection = document.getElementById('loginSection');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginBtn = document.getElementById('loginBtn');
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const loginMessage = document.getElementById('loginMessage');
+        const participantNameInput = document.getElementById('participantName');
+        const addParticipantBtn = document.getElementById('addParticipantBtn');
+        const participantList = document.getElementById('participantList');
+        const prizeNameInput = document.getElementById('prizeName');
+        const prizeImageInput = document.getElementById('prizeImage');
+        const prizeQuotaInput = document.getElementById('prizeQuota');
+        const addPrizeBtn = document.getElementById('addPrizeBtn');
+        const prizesList = document.getElementById('prizesList');
+        const grandPrizeForm = document.getElementById('grandPrizeForm');
+        const grandPrizesList = document.getElementById('grandPrizesList');
+        const grandPrize1NameInput = document.getElementById('grandPrize1Name');
+        const grandPrize1ImageInput = document.getElementById('grandPrize1Image');
+        const grandPrize2NameInput = document.getElementById('grandPrize2Name');
+        const grandPrize2ImageInput = document.getElementById('grandPrize2Image');
+        const grandPrize3NameInput = document.getElementById('grandPrize3Name');
+        const grandPrize3ImageInput = document.getElementById('grandPrize3Image');
+        const resetWinnersBtn = document.getElementById('resetWinnersBtn');
+        const resetAllDataBtn = document.getElementById('resetAllDataBtn');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Tab Switching Logic
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.dataset.tab;
+                
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${targetTab}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        loginBtn.addEventListener('click', () => {
+            if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                loginSection.style.display = 'none';
+                adminPanel.style.display = 'block';
+                loginMessage.textContent = '';
+                fetchData();
+            } else {
+                loginMessage.textContent = "Password salah!";
+            }
+        });
+
+        async function fetchData() {
+            if (!userIsReady) {
+                console.error("User is not authenticated.");
+                return;
+            }
+
+            onSnapshot(collection(db, `artifacts/${appId}/public/data/participants`), (snapshot) => {
+                participantList.innerHTML = '';
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('list-item');
+                    item.innerHTML = `<span class="list-item-name">${data.name}</span><div class="list-item-actions"><button data-id="${doc.id}" data-name="${data.name}" class="delete-participant-btn">Hapus</button></div>`;
+                    participantList.appendChild(item);
+                });
+            });
+
+            onSnapshot(doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig'), (docSnap) => {
+                const config = docSnap.data();
+                prizesList.innerHTML = '';
+                if (config && config.prizes) {
+                    config.prizes.forEach(prize => {
+                        const item = document.createElement('div');
+                        item.classList.add('list-item');
+                        item.innerHTML = `
+                            <div>
+                                <span class="list-item-name">${prize.name}</span>
+                                <p class="text-sm text-gray-500">Kuota: ${prize.quota}</p>
+                            </div>
+                            <div class="list-item-actions flex space-x-2">
+                                <button data-id="${prize.id}" class="delete-prize-btn bg-red-500">Hapus</button>
+                            </div>`;
+                        prizesList.appendChild(item);
+                    });
+                }
+                
+                grandPrizesList.innerHTML = '';
+                if (config && config.grandPrizes) {
+                    const grandPrizes = config.grandPrizes;
+                    if (grandPrizes[0]) {
+                        grandPrizesList.innerHTML += `
+                            <div class="list-item">
+                                <div><span class="list-item-name">Juara 1: ${grandPrizes[0].name}</span></div>
+                                <div class="list-item-actions"><button data-id="1" class="delete-grand-prize-btn bg-red-500">Hapus</button></div>
+                            </div>`;
+                    }
+                    if (grandPrizes[1]) {
+                        grandPrizesList.innerHTML += `
+                            <div class="list-item">
+                                <div><span class="list-item-name">Juara 2: ${grandPrizes[1].name}</span></div>
+                                <div class="list-item-actions"><button data-id="2" class="delete-grand-prize-btn bg-red-500">Hapus</button></div>
+                            </div>`;
+                    }
+                    if (grandPrizes[2]) {
+                         grandPrizesList.innerHTML += `
+                            <div class="list-item">
+                                <div><span class="list-item-name">Juara 3: ${grandPrizes[2].name}</span></div>
+                                <div class="list-item-actions"><button data-id="3" class="delete-grand-prize-btn bg-red-500">Hapus</button></div>
+                            </div>`;
+                    }
+                }
+            });
+        }
+
+        addParticipantBtn.addEventListener('click', async () => {
+            const name = participantNameInput.value.trim();
+            if (name) {
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/participants`), { name: name, status: 'available' });
+                    participantNameInput.value = '';
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                }
+            }
+        });
+
+        participantList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-participant-btn')) {
+                const docId = e.target.dataset.id;
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/participants`, docId));
+                } catch (e) {
+                    console.error("Error deleting document: ", e);
+                }
+            }
+        });
+
+        addPrizeBtn.addEventListener('click', async () => {
+            const name = prizeNameInput.value.trim();
+            const image = prizeImageInput.value.trim();
+            const quota = parseInt(prizeQuotaInput.value, 10);
+            if (name && image && !isNaN(quota) && quota > 0) {
+                try {
+                    const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                    const configSnap = await getDoc(configRef);
+                    const drawConfig = configSnap.data() || { prizes: [], grandPrizes: [] };
+                    drawConfig.prizes.push({ id: `prize-${Date.now()}`, name, image, quota, remaining: quota });
+                    await setDoc(configRef, drawConfig);
+                    prizeNameInput.value = '';
+                    prizeImageInput.value = '';
+                    prizeQuotaInput.value = 1;
+                } catch (e) {
+                    console.error("Error adding prize:", e);
+                }
+            }
+        });
+
+        prizesList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-prize-btn')) {
+                const prizeId = e.target.dataset.id;
+                try {
+                    const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                    const configSnap = await getDoc(configRef);
+                    if (configSnap.exists()) {
+                        const drawConfig = configSnap.data();
+                        drawConfig.prizes = drawConfig.prizes.filter(p => p.id !== prizeId);
+                        await setDoc(configRef, drawConfig);
+                    }
+                } catch (e) {
+                    console.error("Error deleting prize:", e);
+                }
+            }
+        });
+
+        grandPrizeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const prize1Name = grandPrize1NameInput.value.trim();
+            const prize1Image = grandPrize1ImageInput.value.trim();
+            const prize2Name = grandPrize2NameInput.value.trim();
+            const prize2Image = grandPrize2ImageInput.value.trim();
+            const prize3Name = grandPrize3NameInput.value.trim();
+            const prize3Image = grandPrize3ImageInput.value.trim();
+            
+            const grandPrizes = [];
+            if (prize1Name && prize1Image) grandPrizes.push({ id: 'grand-prize-1', name: prize1Name, image: prize1Image, rank: 1 });
+            if (prize2Name && prize2Image) grandPrizes.push({ id: 'grand-prize-2', name: prize2Name, image: prize2Image, rank: 2 });
+            if (prize3Name && prize3Image) grandPrizes.push({ id: 'grand-prize-3', name: prize3Name, image: prize3Image, rank: 3 });
+            
+            try {
+                const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                const configSnap = await getDoc(configRef);
+                const drawConfig = configSnap.data() || { prizes: [] };
+                drawConfig.grandPrizes = grandPrizes;
+                await setDoc(configRef, drawConfig, { merge: true });
+                console.log("Grand prizes saved successfully.");
+            } catch (e) {
+                console.error("Error adding grand prize:", e);
+            }
+        });
+        
+        grandPrizesList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-grand-prize-btn')) {
+                const rank = parseInt(e.target.dataset.id);
+                try {
+                    const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                    const configSnap = await getDoc(configRef);
+                    if (configSnap.exists()) {
+                        const drawConfig = configSnap.data();
+                        drawConfig.grandPrizes = drawConfig.grandPrizes.filter(p => p.rank !== rank);
+                        await setDoc(configRef, drawConfig);
+                    }
+                } catch (e) {
+                    console.error("Error deleting grand prize:", e);
+                }
+            }
+        });
+
+        resetWinnersBtn.addEventListener('click', async () => {
+            const result = window.prompt("Apakah Anda yakin ingin menghapus semua pemenang?\n\nKetik 'YA' untuk melanjutkan.");
+            if (result && result.toUpperCase() === 'YA') {
+                try {
+                    const winnersRef = collection(db, `artifacts/${appId}/public/data/winners`);
+                    const grandWinnersRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
+                    const winnerDocs = await getDocs(winnersRef);
+                    const grandWinnerDocs = await getDocs(grandWinnersRef);
+                    
+                    for (const doc of winnerDocs.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+                    for (const doc of grandWinnerDocs.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+
+                    const participantsRef = collection(db, `artifacts/${appId}/public/data/participants`);
+                    const participantDocs = await getDocs(participantsRef);
+                    for (const doc of participantDocs.docs) {
+                        await updateDoc(doc.ref, { status: 'available' });
+                    }
+                    
+                    console.log("Semua pemenang berhasil direset.");
+                } catch (e) {
+                    console.error("Error resetting winners: ", e);
+                }
+            }
+        });
+
+        resetAllDataBtn.addEventListener('click', async () => {
+            const result = window.prompt("PERINGATAN! Tindakan ini akan menghapus SEMUA data (peserta, hadiah, pemenang). Lanjutkan?\n\nKetik 'YA' untuk melanjutkan.");
+            if (result && result.toUpperCase() === 'YA') {
+                try {
+                    const collectionsToDelete = ['participants', 'winners', 'grandWinners', 'config', 'state'];
+                    for (const colName of collectionsToDelete) {
+                        const docs = await getDocs(collection(db, `artifacts/${appId}/public/data/${colName}`));
+                        for (const doc of docs.docs) {
+                            await deleteDoc(doc.ref);
+                        }
+                    }
+                    console.log("Semua data berhasil dihapus.");
+                } catch (e) {
+                    console.error("Error deleting all data: ", e);
+                }
+            }
+        });
+
+        window.onload = async () => {
+            await authenticate();
+        };
+
+    </script>
+</body>
+</html>
