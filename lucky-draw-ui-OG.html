@@ -923,6 +923,7 @@
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
             const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+            const controlDocRef = doc(db, `artifacts/${appId}/public/data/uiState`, 'control');
 
             onSnapshot(participantsColRef, (snapshot) => {
                 participants = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
@@ -948,8 +949,46 @@
                 grandWinners = snapshot.docs.map(doc => doc.data());
                 updateGrandWinnersList();
             });
+
+            onSnapshot(controlDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    processRemoteCommand(docSnap.data());
+                }
+            });
         }
             
+        function processRemoteCommand(data) {
+            console.log("Received remote command:", data);
+            const { command, prizeIndex } = data;
+            
+            switch(command) {
+                case 'startDraw':
+                    if (currentDrawMode === 'regular') {
+                        startDraw();
+                    }
+                    break;
+                case 'showPrizeSelect':
+                    if (currentDrawMode === 'regular') {
+                        showPrizeSelectModal();
+                    }
+                    break;
+                case 'toggleMode':
+                    toggleDrawMode();
+                    break;
+                case 'startGrandDraw':
+                    if (currentDrawMode === 'grand' && prizeIndex !== undefined) {
+                        startGrandDraw(prizeIndex);
+                    }
+                    break;
+                case 'resetAll':
+                    // This can be used for a full reset from remote if needed
+                    resetDraw();
+                    break;
+                default:
+                    console.log("Unknown command:", command);
+            }
+        }
+
         function updateRegularWinnersList() {
             winnerList.innerHTML = '';
             if (!sessionPrize) {
