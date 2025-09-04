@@ -731,7 +731,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, onSnapshot, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, onSnapshot, query, where, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         
         // Firebase Configuration
@@ -960,16 +960,19 @@
             allParticipants = snapshot.docs.map(doc => doc.data().name);
         }
 
-        function startRolling(winnerName) {
+        function startRolling(mode) {
             clearInterval(rollingInterval);
             if (isAudioEnabled) {
                 rollingAudio.play().catch(e => console.error("Rolling audio play failed:", e));
             }
             
-            rollingDisplay.classList.remove('stopped-white');
-            rollingDisplay.classList.add('rolling-gold');
-            rollingGrandPrizeDisplay.classList.remove('stopped-white');
-            rollingGrandPrizeDisplay.classList.add('rolling-gold');
+            if (mode === 'regular') {
+                rollingDisplay.classList.remove('stopped-white');
+                rollingDisplay.classList.add('rolling-gold');
+            } else {
+                rollingGrandPrizeDisplay.classList.remove('stopped-white');
+                rollingGrandPrizeDisplay.classList.add('rolling-gold');
+            }
             
             const namesToRoll = [...allParticipants];
             shuffleArray(namesToRoll);
@@ -977,8 +980,12 @@
             const rollSpeed = 50;
             let rollIndex = 0;
             rollingInterval = setInterval(() => {
-                rollingDisplay.textContent = namesToRoll[rollIndex];
-                rollingGrandPrizeDisplay.textContent = namesToRoll[rollIndex];
+                const nameToShow = namesToRoll[rollIndex];
+                if (mode === 'regular') {
+                    rollingDisplay.textContent = nameToShow;
+                } else {
+                    rollingGrandPrizeDisplay.textContent = nameToShow;
+                }
                 rollIndex = (rollIndex + 1) % namesToRoll.length;
             }, rollSpeed);
         }
@@ -992,9 +999,6 @@
                 rollingDisplay.textContent = winnerName;
                 rollingDisplay.classList.remove('rolling-gold');
                 rollingDisplay.classList.add('stopped-white');
-                const firstName = winnerName.split(' ')[0];
-                const textToSpeak = `Selamat kepada ${firstName}`;
-                speakText(textToSpeak);
             } else {
                 rollingGrandPrizeDisplay.textContent = winnerName;
                 rollingGrandPrizeDisplay.classList.remove('rolling-gold');
@@ -1002,9 +1006,6 @@
             }
         }
         
-        // This variable is now managed by the UI itself to determine roll duration
-        let isFirstRoll = true;
-
         onSnapshot(stateDocRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -1019,7 +1020,7 @@
                 }
 
                 // Handle UI based on state
-                if (data.status === 'idle') {
+                if (data.status === 'idle' || data.status === 'reset') {
                     stopRolling("", data.mode);
                     initialDisplay.classList.remove('d-none');
                     rollingSection.classList.add('d-none');
@@ -1029,9 +1030,6 @@
                         initialPrizeText.textContent = data.currentPrize.name;
                         initialPrizeImage.src = data.currentPrize.image;
                     }
-
-                    // Reset roll timing for the next fresh draw
-                    isFirstRoll = true;
                     winnerList.classList.add('d-none');
                 } else if (data.status === 'rolling') {
                     initialDisplay.classList.add('d-none');
@@ -1048,44 +1046,26 @@
                         grandPrizeTitle.textContent = `Mengundi Pemenang untuk ${data.currentPrize.name}...`;
                     }
                     
-                    startRolling(data.winner.name);
+                    // Start rolling for the specified mode
+                    startRolling(data.mode);
                     
-                    const rollDuration = isFirstRoll ? 3000 : 700;
-                    
-                    setTimeout(async () => {
+                } else if (data.status === 'stopped') {
+                    if (data.mode === 'regular') {
+                        // Regular draw winner, no popup, speak name and update list
                         stopRolling(data.winner.name, data.mode);
-                        
-                        let prize;
+                        const firstName = data.winner.name.split(' ')[0];
+                        speakText(firstName);
+                    } else if (data.mode === 'grand') {
+                        // Grand draw winner, show popup
+                        stopRolling(data.winner.name, 'grand');
                         const configSnap = await getDoc(configDocRef);
-                        if (data.mode === 'regular') {
-                            const prizes = configSnap.data()?.prizes;
-                            prize = prizes.find(p => p.id === data.currentPrize.id);
-                        } else {
-                            const grandPrizes = configSnap.data()?.grandPrizes;
-                            prize = grandPrizes.find(p => p.id === data.currentPrize.id);
-                            showWinnerPopup(data.winner.name, prize);
-                        }
-                        
-                        isFirstRoll = false; // Next roll will be faster
-                    }, rollDuration);
-
-                } else if (data.status === 'stopped' && data.mode === 'grand') {
-                    // Specific logic for Grand Draw stopping
-                    stopRolling(data.winner.name, 'grand');
-                    const configSnap = await getDoc(configDocRef);
-                    const grandPrizes = configSnap.data()?.grandPrizes;
-                    const prize = grandPrizes.find(p => p.id === data.currentPrize.id);
-                    showWinnerPopup(data.winner.name, prize);
-                } else if (data.status === 'reset') {
-                     // Reset UI to initial state
-                     initialDisplay.classList.remove('d-none');
-                     rollingSection.classList.add('d-none');
-                     grandDrawContainer.classList.add('d-none');
-                     winnerList.innerHTML = '<p class="placeholder-text">Pemenang akan muncul di sini</p>';
-                     winnerList.classList.add('d-none');
-                     grandWinnersList.innerHTML = '';
-                     initialPrizeText.textContent = 'Belum Dipilih';
-                     initialPrizeImage.src = 'https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH';
+                        const grandPrizes = configSnap.data()?.grandPrizes;
+                        const prize = grandPrizes.find(p => p.id === data.currentPrize.id);
+                        showWinnerPopup(data.winner.name, prize);
+                        const firstName = data.winner.name.split(' ')[0];
+                        const textToSpeak = `Selamat kepada ${firstName}`;
+                        speakText(textToSpeak);
+                    }
                 }
             }
         });
@@ -1149,6 +1129,11 @@
             if (event.target === winnerModal) {
                 hideWinnerPopup();
             }
+        });
+        
+        // Listen to changes in participants to update the list
+        onSnapshot(participantsColRef, (snapshot) => {
+             fetchInitialParticipants();
         });
 
         // Add event listeners for UI buttons
