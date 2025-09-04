@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Cormorant+Garamond:wght@300;400;700&family=Kaushan+Script&family=Italianno&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #D4AF37;
+            --secondary: #B8860B;
+            --dark: #4B4B4B;
+            --light: #f8f8f8;
+            --gray: #9E9E9E;
+            --warm-light: #FAFAFA;
+            --border: #E0E0E0;
+            --body-bg: #F5F5F5;
+            --card-bg: #FFFFFF;
+            --red-error: #D32F2F;
+            --green-success: #4CAF50;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--dark);
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary);
+            text-align: center;
+        }
+        
+        h2 {
+            margin-top: 2rem;
+        }
+
+        .input-group, .prize-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .input-group > input {
+            flex-grow: 1;
+            min-width: 150px;
+        }
+        
+        input[type="text"], input[type="number"], .password-input, textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .button-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background-color: var(--secondary);
+            transform: translateY(-1px);
+        }
+
+        .button-danger {
+            background-color: var(--red-error);
+            color: white;
+        }
+
+        .button-danger:hover {
+            opacity: 0.8;
+        }
+
+        .button-secondary {
+            background-color: var(--gray);
+            color: white;
+        }
+        
+        .button-secondary:hover {
+            background-color: #666;
+        }
+
+        .password-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .password-container h1 {
+            margin-bottom: 1rem;
+        }
+
+        .admin-content {
+            display: none;
+        }
+        
+        .list-container {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .prize-image-preview {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+        
+        .message-box {
+            background-color: var(--green-success);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .message-box.error {
+            background-color: var(--red-error);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Styles for tabs */
+        .tab-container {
+            display: flex;
+            justify-content: space-around;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            background-color: transparent;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray);
+            cursor: pointer;
+            transition: color 0.3s, border-bottom 0.3s;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        .winner-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="passwordSection" class="password-container">
+        <h1>Halaman Admin</h1>
+        <p>Masukkan password untuk melanjutkan:</p>
+        <div class="input-group" style="width: 300px;">
+            <input type="password" id="passwordInput" class="password-input" placeholder="Password">
+            <button id="loginButton" class="button button-primary">Masuk</button>
+        </div>
+        <div id="loginMessage" class="message-box mt-2"></div>
+    </div>
+
+    <div id="adminContent" class="admin-content container">
+        <h1>Dashboard Admin</h1>
+        <div id="adminMessage" class="message-box"></div>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-button active" data-tab="participants">Peserta</button>
+            <button class="tab-button" data-tab="regular-prizes">Hadiah Biasa</button>
+            <button class="tab-button" data-tab="grand-prizes">Grand Lucky Draw</button>
+            <button class="tab-button" data-tab="winners">Pemenang</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="participants-tab" class="tab-content active">
+            <h2>Kelola Peserta</h2>
+            <div class="input-group" style="flex-direction: column; align-items: stretch;">
+                <label for="participantNames" style="font-weight: 600;">Tambahkan Peserta (satu nama per baris):</label>
+                <textarea id="participantNames" rows="5" placeholder="Masukkan nama-nama peserta di sini..."></textarea>
+                <button id="addParticipantButton" class="button button-primary">Tambah Peserta</button>
+            </div>
+            <div id="participantsList" class="list-container"></div>
+            <button id="resetParticipantsButton" class="button button-danger" style="width: 100%; margin-top: 1rem;">Reset Semua Peserta Yang Sudah Diundi</button>
+        </div>
+
+        <div id="regular-prizes-tab" class="tab-content">
+            <h2>Kelola Hadiah Undian Biasa</h2>
+            <div class="input-group">
+                <input type="text" id="prizeName" placeholder="Nama Hadiah">
+                <input type="text" id="prizeImage" placeholder="URL Gambar Hadiah">
+                <input type="number" id="prizeQuota" placeholder="Kuota">
+                <button id="addPrizeButton" class="button button-primary">Tambah Hadiah</button>
+            </div>
+            <div id="regularPrizesList" class="list-container"></div>
+        </div>
+
+        <div id="grand-prizes-tab" class="tab-content">
+            <h2>Kelola Hadiah Grand Lucky Draw</h2>
+            <div class="input-group">
+                <input type="text" id="grandPrizeName" placeholder="Nama Grand Prize">
+                <input type="text" id="grandPrizeImage" placeholder="URL Gambar Grand Prize">
+                <input type="number" id="grandPrizeRank" placeholder="Peringkat (1, 2, 3)">
+                <button id="addGrandPrizeButton" class="button button-primary">Tambah Grand Prize</button>
+            </div>
+            <div id="grandPrizesList" class="list-container"></div>
+        </div>
+
+        <div id="winners-tab" class="tab-content">
+            <h2>Pemenang Undian</h2>
+            <div id="winnersList" class="list-container">
+                <p style="text-align: center; color: var(--gray); font-style: italic;">Pemenang akan muncul di sini</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal untuk konfirmasi reset -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <h3>Konfirmasi Reset</h3>
+            <p>Anda yakin ingin mereset daftar pemenang? Nama-nama yang sudah menang akan kembali ke daftar undian.</p>
+            <div class="modal-buttons">
+                <button id="confirmResetButton" class="button button-danger">Reset</button>
+                <button id="cancelResetButton" class="button button-secondary">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, addDoc, deleteDoc, query, onSnapshot, where, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        
+        // Firebase Config and Auth
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
+            authDomain: "fundayluckydraw2025.firebaseapp.com",
+            projectId: "fundayluckydraw2025",
+            storageBucket: "fundayluckydraw2025.firebasestorage.app",
+            messagingSenderId: "357768542683",
+            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
+            measurementId: "G-RXN0VTGZ8L"
+        };
+        const appId = "fundayluckydraw2025";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = '';
+
+        const passwordInput = document.getElementById('passwordInput');
+        const loginButton = document.getElementById('loginButton');
+        const passwordSection = document.getElementById('passwordSection');
+        const adminContent = document.getElementById('adminContent');
+        const loginMessage = document.getElementById('loginMessage');
+
+        const ADMIN_PASSWORD = "tiian";
+        
+        loginButton.addEventListener('click', () => {
+            if (passwordInput.value === ADMIN_PASSWORD) {
+                passwordSection.style.display = 'none';
+                adminContent.style.display = 'block';
+                showAdminMessage('Selamat datang, Admin!', false);
+                initAdmin();
+            } else {
+                showAdminMessage('Password salah. Silakan coba lagi.', true);
+                passwordInput.value = '';
+            }
+        });
+
+        // UI elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        const participantNamesInput = document.getElementById('participantNames');
+        const addParticipantButton = document.getElementById('addParticipantButton');
+        const participantsList = document.getElementById('participantsList');
+        const resetParticipantsButton = document.getElementById('resetParticipantsButton');
+
+        const prizeNameInput = document.getElementById('prizeName');
+        const prizeImageInput = document.getElementById('prizeImage');
+        const prizeQuotaInput = document.getElementById('prizeQuota');
+        const addPrizeButton = document.getElementById('addPrizeButton');
+        const regularPrizesList = document.getElementById('regularPrizesList');
+
+        const grandPrizeNameInput = document.getElementById('grandPrizeName');
+        const grandPrizeImageInput = document.getElementById('grandPrizeImage');
+        const grandPrizeRankInput = document.getElementById('grandPrizeRank');
+        const addGrandPrizeButton = document.getElementById('addGrandPrizeButton');
+        const grandPrizesList = document.getElementById('grandPrizesList');
+        
+        const winnersList = document.getElementById('winnersList');
+        const resetModal = document.getElementById('resetModal');
+        const confirmResetButton = document.getElementById('confirmResetButton');
+        const cancelResetButton = document.getElementById('cancelResetButton');
+
+        function showAdminMessage(message, isError = false) {
+            const el = document.getElementById('adminMessage');
+            el.textContent = message;
+            el.classList.toggle('error', isError);
+            el.style.display = 'block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            document.getElementById(tabId + '-tab').classList.add('active');
+            document.querySelector(`.tab-button[data-tab='${tabId}']`).classList.add('active');
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.getAttribute('data-tab');
+                switchTab(tab);
+            });
+        });
+
+        function initAdmin() {
+            // Firestore data paths
+            const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+            const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
+            const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
+            const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
+            const stateRef = doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize');
+
+
+            // Listeners for real-time updates
+            onSnapshot(participantsColRef, (snapshot) => {
+                participantsList.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('list-item');
+                    item.innerHTML = `
+                        <span>${data.name}</span>
+                        <button class="button button-danger delete-participant" data-id="${doc.id}">Hapus</button>
+                    `;
+                    participantsList.appendChild(item);
+                });
+            });
+            
+            onSnapshot(winnersColRef, (snapshot) => {
+                winnersList.innerHTML = '';
+                if (snapshot.empty) {
+                    winnersList.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang undian biasa.</p>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('winner-list-item');
+                    item.innerHTML = `
+                        <span>${data.name}</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <img src="${data.prizeImage}" onerror="this.src='https://placehold.co/30x30/E0E0E0/4B4B4B?text=H';" alt="${data.prizeName}" class="prize-image-preview">
+                            <span>${data.prizeName}</span>
+                        </div>
+                    `;
+                    winnersList.appendChild(item);
+                });
+            });
+            
+            onSnapshot(grandWinnersColRef, (snapshot) => {
+                // You can add grand winner handling here if needed
+                // For now, this is just a placeholder
+            });
+
+            onSnapshot(configDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    renderPrizes(data.prizes || [], regularPrizesList, 'regular');
+                    renderPrizes(data.grandPrizes || [], grandPrizesList, 'grand');
+                }
+            });
+
+            function renderPrizes(prizes, listElement, type) {
+                listElement.innerHTML = '';
+                prizes.forEach((prize, index) => {
+                    const item = document.createElement('div');
+                    item.classList.add('list-item');
+                    item.innerHTML = `
+                        <div class="prize-item">
+                            <img src="${prize.image}" onerror="this.src='https://placehold.co/50x50/E0E0E0/4B4B4B?text=Hadiah';" alt="${prize.name}" class="prize-image-preview">
+                            <span>${prize.name}</span>
+                            ${type === 'regular' ? `<span>(Kuota: ${prize.quota})</span>` : `<span>(Peringkat: ${prize.rank})</span>`}
+                        </div>
+                        <button class="button button-danger delete-prize" data-index="${index}" data-type="${type}">Hapus</button>
+                    `;
+                    listElement.appendChild(item);
+                });
+            }
+
+            // Event Handlers
+            addParticipantButton.addEventListener('click', async () => {
+                const names = participantNamesInput.value.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+                if (names.length > 0) {
+                    const batch = writeBatch(db);
+                    names.forEach(name => {
+                        const newDocRef = doc(collection(db, `artifacts/${appId}/public/data/participants`));
+                        batch.set(newDocRef, { name: name });
+                    });
+                    
+                    try {
+                        await batch.commit();
+                        participantNamesInput.value = '';
+                        showAdminMessage(`${names.length} peserta berhasil ditambahkan.`);
+                    } catch (e) {
+                        console.error("Error adding participants: ", e);
+                        showAdminMessage('Gagal menambahkan peserta.', true);
+                    }
+                } else {
+                    showAdminMessage('Silakan masukkan nama peserta.', true);
+                }
+            });
+
+            participantsList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('delete-participant')) {
+                    const id = e.target.getAttribute('data-id');
+                    try {
+                        await deleteDoc(doc(participantsColRef, id));
+                        showAdminMessage('Peserta berhasil dihapus.');
+                    } catch (e) {
+                        console.error("Error removing participant: ", e);
+                        showAdminMessage('Gagal menghapus peserta.', true);
+                    }
+                }
+            });
+            
+            resetParticipantsButton.addEventListener('click', () => {
+                resetModal.style.display = 'flex';
+            });
+            
+            cancelResetButton.addEventListener('click', () => {
+                resetModal.style.display = 'none';
+            });
+            
+            confirmResetButton.addEventListener('click', async () => {
+                resetModal.style.display = 'none';
+                try {
+                    const batch = writeBatch(db);
+                    
+                    // Delete all regular winners
+                    const winnersSnap = await getDocs(winnersColRef);
+                    winnersSnap.forEach(d => {
+                        batch.delete(d.ref);
+                    });
+
+                    // Delete all grand winners
+                    const grandWinnersSnap = await getDocs(grandWinnersColRef);
+                    grandWinnersSnap.forEach(d => {
+                        batch.delete(d.ref);
+                    });
+                    
+                    // Reset regular prize state
+                    batch.set(stateRef, { winnerCount: 0 }, { merge: true });
+                    
+                    await batch.commit();
+                    showAdminMessage('Berhasil mereset semua pemenang.');
+                } catch (e) {
+                    console.error("Error resetting winners:", e);
+                    showAdminMessage('Gagal mereset pemenang.', true);
+                }
+            });
+
+            addPrizeButton.addEventListener('click', async () => {
+                const name = prizeNameInput.value.trim();
+                const image = prizeImageInput.value.trim();
+                const quota = parseInt(prizeQuotaInput.value, 10);
+                if (name && image && !isNaN(quota) && quota > 0) {
+                    try {
+                        const docSnap = await getDoc(configDocRef);
+                        const currentPrizes = docSnap.data()?.prizes || [];
+                        const newPrize = { name, image, quota, id: crypto.randomUUID() };
+                        currentPrizes.push(newPrize);
+                        await setDoc(configDocRef, { prizes: currentPrizes }, { merge: true });
+                        prizeNameInput.value = '';
+                        prizeImageInput.value = '';
+                        prizeQuotaInput.value = '';
+                        showAdminMessage('Hadiah undian biasa berhasil ditambahkan.');
+                    } catch (e) {
+                        console.error("Error adding prize: ", e);
+                        showAdminMessage('Gagal menambahkan hadiah.', true);
+                    }
+                }
+            });
+
+            regularPrizesList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('delete-prize')) {
+                    const index = parseInt(e.target.getAttribute('data-index'), 10);
+                    const docSnap = await getDoc(configDocRef);
+                    const currentPrizes = docSnap.data()?.prizes || [];
+                    currentPrizes.splice(index, 1);
+                    await setDoc(configDocRef, { prizes: currentPrizes }, { merge: true });
+                    showAdminMessage('Hadiah undian biasa berhasil dihapus.');
+                }
+            });
+
+            addGrandPrizeButton.addEventListener('click', async () => {
+                const name = grandPrizeNameInput.value.trim();
+                const image = grandPrizeImageInput.value.trim();
+                const rank = parseInt(grandPrizeRankInput.value, 10);
+                if (name && image && !isNaN(rank) && rank > 0) {
+                    try {
+                        const docSnap = await getDoc(configDocRef);
+                        const currentPrizes = docSnap.data()?.grandPrizes || [];
+                        const newPrize = { name, image, rank, id: crypto.randomUUID() };
+                        currentPrizes.push(newPrize);
+                        await setDoc(configDocRef, { grandPrizes: currentPrizes }, { merge: true });
+                        grandPrizeNameInput.value = '';
+                        grandPrizeImageInput.value = '';
+                        grandPrizeRankInput.value = '';
+                        showAdminMessage('Hadiah grand prize berhasil ditambahkan.');
+                    } catch (e) {
+                        console.error("Error adding grand prize: ", e);
+                        showAdminMessage('Gagal menambahkan grand prize.', true);
+                    }
+                }
+            });
+
+            grandPrizesList.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('delete-prize')) {
+                    const index = parseInt(e.target.getAttribute('data-index'), 10);
+                    const docSnap = await getDoc(configDocRef);
+                    const currentPrizes = docSnap.data()?.grandPrizes || [];
+                    currentPrizes.splice(index, 1);
+                    await setDoc(configDocRef, { grandPrizes: currentPrizes }, { merge: true });
+                    showAdminMessage('Hadiah grand prize berhasil dihapus.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
