@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw Remote</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1a1a1a;
+            color: #f8f8f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #2a2a2a;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .button-control {
+            background-color: #D4AF37;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            width: 100%;
+        }
+        .button-control:hover {
+            background-color: #B8860B;
+            transform: translateY(-2px);
+        }
+        .button-control:disabled {
+            background-color: #9E9E9E;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            color: #D4AF37;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold mb-6 text-center text-white">Lucky Draw Remote</h1>
+        
+        <!-- Regular Lucky Draw Section -->
+        <div id="regular-draw-section" class="mb-8">
+            <h2 class="section-title">Undian Biasa</h2>
+            <div class="button-group">
+                <button id="select-prize-btn" class="button-control">Pilih Hadiah</button>
+                <button id="start-draw-btn" class="button-control">Mulai Undian</button>
+            </div>
+        </div>
+
+        <!-- Grand Lucky Draw Section -->
+        <div id="grand-draw-section">
+            <h2 class="section-title">Grand Lucky Draw</h2>
+            <div class="button-group">
+                <button id="toggle-mode-btn" class="button-control bg-red-600 hover:bg-red-700">Pindah ke Grand Lucky Draw</button>
+                <button id="draw-grand-1-btn" class="button-control mt-4">Pemenang 1</button>
+                <button id="draw-grand-2-btn" class="button-control">Pemenang 2</button>
+                <button id="draw-grand-3-btn" class="button-control">Pemenang 3</button>
+            </div>
+        </div>
+
+        <div id="status-message" class="mt-8 text-center text-sm text-gray-400">
+            Terhubung ke server...
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
+            authDomain: "fundayluckydraw2025.firebaseapp.com",
+            projectId: "fundayluckydraw2025",
+            storageBucket: "fundayluckydraw2025.firebasestorage.app",
+            messagingSenderId: "357768542683",
+            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
+            measurementId: "G-RXN0VTGZ8L"
+        };
+        const appId = firebaseConfig.projectId;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // UI elements
+        const startDrawBtn = document.getElementById('start-draw-btn');
+        const selectPrizeBtn = document.getElementById('select-prize-btn');
+        const toggleModeBtn = document.getElementById('toggle-mode-btn');
+        const drawGrand1Btn = document.getElementById('draw-grand-1-btn');
+        const drawGrand2Btn = document.getElementById('draw-grand-2-btn');
+        const drawGrand3Btn = document.getElementById('draw-grand-3-btn');
+        const statusMessage = document.getElementById('status-message');
+
+        const controlDocRef = doc(db, `artifacts/${appId}/public/data/uiState`, 'control');
+
+        // Fungsi untuk mengirim perintah ke Firestore
+        async function sendCommand(command, payload = {}) {
+            try {
+                await setDoc(controlDocRef, {
+                    command: command,
+                    timestamp: new Date(),
+                    ...payload
+                }, { merge: true });
+                statusMessage.textContent = `Perintah "${command}" berhasil dikirim.`;
+            } catch (error) {
+                console.error("Error sending command:", error);
+                statusMessage.textContent = `Gagal mengirim perintah. Error: ${error.message}`;
+            }
+        }
+
+        // Event Listeners
+        startDrawBtn.addEventListener('click', () => sendCommand('startDraw'));
+        selectPrizeBtn.addEventListener('click', () => sendCommand('showPrizeSelect'));
+        toggleModeBtn.addEventListener('click', () => sendCommand('toggleMode'));
+        drawGrand1Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 0 }));
+        drawGrand2Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 1 }));
+        drawGrand3Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 2 }));
+
+        // Real-time listener untuk status UI
+        onSnapshot(doc(db, `artifacts/${appId}/public/data/uiState`, 'control'), (docSnap) => {
+            const data = docSnap.data();
+            if (data && data.status) {
+                statusMessage.textContent = `Status: ${data.status}`;
+            }
+        });
+
+        // Autentikasi dan inisialisasi
+        async function initRemote() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                statusMessage.textContent = "Terhubung dan siap!";
+            } catch (error) {
+                statusMessage.textContent = `Gagal terhubung. Error: ${error.message}`;
+                console.error("Firebase Auth Error:", error);
+            }
+        }
+
+        window.onload = initRemote;
+    </script>
+</body>
+</html>
