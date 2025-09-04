@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Lucky Draw</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Cormorant+Garamond:wght@300;400;700&family=Kaushan+Script&family=Italianno&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Global CSS variables */
+        :root {
+            --primary: #D4AF37; /* Gold */
+            --secondary: #B8860B; /* Darker Gold */
+            --dark: #4B4B4B; /* Dark Charcoal */
+            --light: #f8f8f8; /* Light background */
+            --gray: #9E9E9E; /* Medium Grey */
+            --warm-light: #FAFAFA; /* Very light grey, almost white */
+            --border: #E0E0E0; /* Light Grey */
+            --body-bg: #F5F5F5;
+            --card-bg: #FFFFFF;
+            --red-error: #D32F2F;
+            --green-success: #4CAF50;
+        }
+
+        /* Reset body dengan gaya dari referensi */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            color: var(--light) !important;
+            background: radial-gradient(circle at 50% 50%, #153a33, #0e2a25);
+            background-size: 200% 200%;
+            animation: moveGradient 15s ease infinite;
+            margin: 0 !important;
+            padding: 20px !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+        }
+
+        /* Container untuk konten utama, disesuaikan dengan referensi */
+        .main-container {
+            width: 100% !important;
+            max-width: 1200px !important;
+            background-color: transparent !important;
+            padding: 2rem !important;
+            border: none !important;
+            box-shadow: none !important;
+            text-align: center;
+            margin: 20px auto;
+        }
+
+        /* Gaya untuk lucky draw card, disesuaikan dengan tema utama */
+        .lucky-draw-card {
+            background-color: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .rolling-display {
+            font-size: 2rem;
+            font-weight: 700;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 2px solid var(--primary);
+            border-radius: 1rem;
+            margin: 1.5rem auto;
+            background: linear-gradient(to right, #153a33, #0e2a25);
+            transition: all 0.5s ease-in-out;
+            max-width: 600px;
+            width: 600px;
+        }
+            
+        /* Tampilan hadiah utama */
+        .prize-main-display {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            background: none;
+            border: none;
+            height: auto;
+            min-height: 200px;
+            margin-top: 3rem;
+        }
+        
+        /* Tampilan hadiah saat undian berputar */
+        .prize-rolling-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem auto;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 3rem;
+        }
+
+        .prize-image-container {
+            width: 500px;
+            height: 375px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            border: 2px solid var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .prize-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .prize-title-text {
+            font-family: 'Italianno', cursive;
+            font-size: 2rem;
+            font-weight: 400;
+            color: white;
+            line-height: 1.2;
+        }
+
+        .prize-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .prize-rolling-image {
+            width: 4rem;
+            height: 4rem;
+            margin-right: 0.5rem;
+        }
+
+        .prize-rolling-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--light);
+        }
+
+        .winner-list-container {
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px dashed var(--primary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            background-color: #0e2a25;
+        }
+
+        .winner-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            animation: fadeIn 0.5s ease-out;
+            border-radius: 0;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .winner-name.highlight {
+            background-color: var(--primary);
+            color: var(--dark);
+            transition: background-color 0.5s ease-in-out;
+        }
+
+        .placeholder-text {
+            color: var(--gray);
+            font-style: italic;
+            margin-top: 2rem;
+        }
+
+        .prize-display {
+            background-color: transparent;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: white;
+        }
+
+        .prize-display img {
+            filter: invert(1);
+        }
+
+        /* Gaya untuk tombol, disesuaikan dengan referensi */
+        .primary-button {
+            background-color: var(--primary) !important;
+            color: white !important;
+            padding: 12px 24px !important;
+            border: none !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+            margin-top: 20px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            width: 100%;
+        }
+
+        .primary-button:hover:not(:disabled) {
+            background-color: var(--secondary) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15) !important;
+        }
+            
+        .primary-button:active:not(:disabled) {
+            transform: translateY(0) !important;
+            box-shadow: 4px 6px rgba(0, 0, 0, 0.1) !important;
+        }
+            
+        .primary-button:disabled {
+            background-color: var(--gray) !important;
+            color: #666666 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+            opacity: 0.5;
+        }
+            
+        .title-image {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            object-fit: contain;
+            margin: 0 auto 50px auto;
+        }
+
+        .prize-image {
+            filter: invert(1);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes moveGradient {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
+        }
+
+        /* Animasi putaran untuk lingkaran */
+        @keyframes spin {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+            
+        /* Gaya untuk lingkaran yang berputar */
+        .spinning-circle {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120vw;
+            height: 120vh;
+            object-fit: contain;
+            animation: spin 30s linear infinite;
+            z-index: -2;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* Partikel */
+        #particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: twinkle-light linear infinite, moveParticle linear infinite;
+        }
+
+        /* New glow classes based on color */
+        .particle-white-glow {
+            background-color: #FFFFFF;
+            box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.7), 0 0 10px 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .particle-gold-glow {
+            background-color: #D4AF37;
+            box-shadow: 0 0 5px 2px rgba(212, 175, 55, 0.7), 0 0 10px 5px rgba(212, 175, 55, 0.5);
+        }
+        
+        @keyframes twinkle-light {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @keyframes moveParticle {
+            0% {
+                transform: translate(var(--x-start), var(--y-start)) scale(0);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x-end), var(--y-end)) scale(var(--size));
+                opacity: 0;
+            }
+        }
+
+        /* New CSS for the audio button */
+        .audio-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            z-index: 10;
+        }
+
+        .audio-button:hover {
+            background-color: var(--secondary);
+            transform: scale(1.1);
+        }
+
+        /* Gaya untuk tombol visibility */
+        .visibility-button {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #3f3f3f;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            z-index: 10;
+        }
+
+        .visibility-button:hover {
+            background-color: #5d5d5d;
+            transform: scale(1.1);
+        }
+
+        .lucide {
+            stroke-width: 2.5;
+        }
+
+        /* Gaya untuk tombol pengalihan mode */
+        .toggle-draw-button {
+            position: fixed;
+            bottom: 140px;
+            right: 20px;
+            background-color: #1a1a1a;
+            color: white;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            z-index: 10;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .toggle-draw-button:hover {
+            background-color: #2a2a2a;
+            transform: scale(1.1);
+        }
+
+        /* Gaya untuk section grand lucky draw */
+        .grand-draw-container {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            text-align: center;
+        }
+        
+        /* New CSS for the grand prize list items */
+        .grand-prize-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1a1a1a;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Efek khusus untuk pemenang grand prize */
+        .grand-prize-list-item.won-1 {
+            background: linear-gradient(135deg, #FFD700, #B8860B);
+            color: #1a1a1a;
+            border-left: none;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+
+        .grand-prize-list-item.won-2 {
+            background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+            color: #1a1a1a;
+            border-left: none;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.6);
+            transform: scale(1.03);
+            transition: transform 0.3s ease;
+        }
+
+        .grand-prize-list-item.won-3 {
+            background: linear-gradient(135deg, #CD7F32, #8B4513);
+            color: #1a1a1a;
+            border-left: none;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+            transform: scale(1.01);
+            transition: transform 0.3s ease;
+        }
+        
+        .grand-prize-list-item .winner-text {
+            color: var(--gray);
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .grand-prize-list-item.won-1 .winner-text,
+        .grand-prize-list-item.won-2 .winner-text,
+        .grand-prize-list-item.won-3 .winner-text {
+            color: #1a1a1a;
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        /* New classes for explicit display control */
+        .d-flex { display: flex; }
+        .d-block { display: block; }
+        .d-none { display: none; }
+
+        .rolling-display.rolling-gold {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            transition: all 0.2s ease;
+            animation: pulse-gold 1s infinite alternate;
+        }
+        
+        .rolling-display.stopped-white {
+            background: linear-gradient(45deg, #FFFFFF, #f0f0f0);
+            color: #1a1a1a;
+            border-color: #FFFFFF;
+            animation: pulse-white 1s infinite alternate, shine 1s ease-in-out;
+            box-shadow: 0 0 20px #FFFFFF, inset 0 0 10px #FFFFFF;
+        }
+
+        @keyframes pulse-gold {
+            from { box-shadow: 0 0 10px var(--primary); }
+            to { box-shadow: 0 0 20px var(--primary); }
+        }
+
+        @keyframes pulse-white {
+            from { box-shadow: 0 0 10px white; }
+            to { box-shadow: 0 0 20px white; }
+        }
+
+        @keyframes shine {
+            0% { text-shadow: none; }
+            50% { text-shadow: 0 0 10px white; }
+            100% { text-shadow: none; }
+        }
+
+        /* Modal / Popup CSS */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Tambah overlay hitam transparan */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            border: 2px solid var(--primary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
+            animation: modal-enter 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal.open .modal-content {
+            transform: scale(1);
+        }
+        
+        @keyframes modal-enter {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-winner-name {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .modal-prize-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-prize-image-container {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-prize-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .close-modal-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .close-modal-button:hover {
+            background-color: var(--secondary);
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Elemen gambar yang berputar sebagai background -->
+    <img src="https://daytian.fun/w/funday/img/sinar.png" class="spinning-circle" alt="Latar Belakang Berputar">
+
+    <div id="particles-container"></div>
+    <canvas id="confettiCanvas" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:1001; pointer-events:none;"></canvas>
+    
+    <div class="main-container">
+        
+        <!-- Section: Lucky Draw Biasa -->
+        <div id="regularDrawContainer" class="lucky-draw-card d-flex flex-col">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmZ1OIf8I-iPxIg5tJY4s7_KoLM6f8XV-AxIKimOA_QRKhp_IX1u3hx4AQjI8h4Rf5LjUBJBjvZpb5cTj_VYPrptve2UsuUP7GHfpA7ArH2NS303-14YZQtYALh0G2tzgCTimjMOBQhD0tWyKoatcypjzzJTR9KpzwfTWu-9nd7UEPmd8Tu87S3s5A/s1600/eska%20run%20logo.png" class="title-image mb-8" alt="ESKA Run Logo">
+            
+            <!-- Tampilan Awal (mode idle) -->
+            <div id="initialDisplay" class="d-flex flex-col justify-center items-center gap-1rem mt-3rem">
+                <div class="prize-image-container">
+                    <img id="initialPrizeImage" src="https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH" alt="Hadiah Lucky Draw" class="w-full h-full object-cover rounded-xl">
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="prize-title-text text-center">Prize</span>
+                    <span id="initialPrizeText" class="prize-text text-center"></span>
+                </div>
+            </div>
+            
+            <!-- Tampilan Saat Rolling (muncul saat undian dimulai) -->
+            <div id="rollingSection" class="d-none">
+                <div id="prizeRollingDisplay" class="prize-rolling-display">
+                    <img id="prizeRollingImage" src="https://placehold.co/50x50/D4AF37/0e2a25?text=Hadiah" class="prize-rolling-image" alt="Prize Icon">
+                    <span id="prizeRollingText" class="prize-rolling-text"></span>
+                </div>
+                <div id="rolling-display" class="rolling-display">
+                    <!-- Konten nama yang di-roll akan diatur oleh JavaScript -->
+                </div>
+                <div id="winner-list" class="winner-list-container d-none">
+                    <p class="placeholder-text">Pemenang akan muncul di sini</p>
+                </div>
+            </div>
+            
+
+            <!-- Kontainer untuk tombol, yang bisa disembunyikan -->
+            <div id="buttonsContainer" class="d-none mt-6 flex justify-center space-x-4">
+                <button id="startButtonUI" class="primary-button w-auto">Mulai Undian</button>
+                <button id="resetButtonUI" class="primary-button w-auto" disabled>Reset</button>
+            </div>
+        </div>
+        
+        <!-- Section: Grand Lucky Draw -->
+        <div id="grandDrawContainer" class="grand-draw-container d-none">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmZ1OIf8I-iPxIg5tJY4s7_KoLM6f8XV-AxIKimOA_QRKhp_IX1u3hx4AQjI8h4Rf5LjUBJBjvZpb5cTj_VYPrptve2UsuUP7GHfpA7ArH2NS303-14YZQtYALh0G2tzgCTimjMOBQhD0tWyKoatcypjzzJTR9KpzwfTWu-9nd7UEPmd8Tu87S3s5A/s1600/eska%20run%20logo.png" class="title-image mb-8" alt="Grand Lucky Draw Logo">
+            <h2 id="grandPrizeTitle" class="text-2xl font-bold mb-4 font-['Playfair_Display'] text-primary">Pemenang Grand Lucky Draw</h2>
+            <div id="rollingGrandPrizeDisplay" class="rolling-display d-none mx-auto">
+                <!-- Konten nama yang di-roll akan diatur oleh JavaScript -->
+            </div>
+            <div id="grandWinnersList" class="w-full max-w-lg mx-auto mt-4">
+                <!-- Daftar grand prize dan pemenang -->
+                <!-- Akan diisi oleh JavaScript -->
+            </div>
+            
+            <!-- Kontainer untuk tombol, yang bisa disembunyikan -->
+            <div id="grandButtonsContainerWrapperUI" class="d-none mt-8 flex flex-col items-center">
+                <p class="text-sm font-light text-gray-400 mb-2">Pilih pemenang dari tombol di bawah</p>
+                <div class="flex space-x-4">
+                    <button id="drawGrandPrize1UI" class="primary-button px-6 w-auto">Pemenang 1</button>
+                    <button id="drawGrandPrize2UI" class="primary-button px-6 w-auto">Pemenang 2</button>
+                    <button id="drawGrandPrize3UI" class="primary-button px-6 w-auto">Pemenang 3</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Popup -->
+    <div id="winnerModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Selamat!</h3>
+            <p class="modal-prize-name">Kamu memenangkan</p>
+            <p id="modalWinnerPrizeName" class="modal-winner-name"></p>
+            <div id="modalPrizeImageContainer" class="modal-prize-image-container">
+                <img id="modalPrizeImage" src="" alt="Hadiah">
+            </div>
+            <p id="modalWinnerName" class="modal-winner-name"></p>
+            <button id="closeModalButton" class="primary-button mt-4">Tutup</button>
+        </div>
+    </div>
+    
+    <!-- Tombol untuk menyembunyikan/menampilkan tombol utama -->
+    <button id="visibilityToggleButton" class="visibility-button">
+        <!-- Icon Mata Terbuka (default) -->
+        <svg id="eyeOpenIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <!-- Icon Mata Tertutup -->
+        <svg id="eyeClosedIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-off hidden"><path d="M10.585 10.585a2 2 0 0 1 2.829 2.829"/><path d="M2 12s3-7 10-7c.476 0 .947.029 1.409.084m2.073 2.073A9.975 9.975 0 0 1 22 12s-3 7-10 7c-1.629 0-3.185-.48-4.534-1.291m-2.427-2.427A9.967 9 0 0 1 2 12z"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+    </button>
+
+    <!-- New Audio Toggle Button -->
+    <button id="audioToggleButton" class="audio-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+    </button>
+    
+    <!-- Tombol untuk beralih antara Lucky Draw dan Grand Lucky Draw -->
+    <button id="toggleDrawButton" class="toggle-draw-button">G</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, onSnapshot, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
+            authDomain: "fundayluckydraw2025.firebaseapp.com",
+            projectId: "fundayluckydraw2025",
+            storageBucket: "fundayluckydraw2025.firebasestorage.app",
+            messagingSenderId: "357768542683",
+            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
+            measurementId: "G-RXN0VTGZ8L"
+        };
+        const appId = "fundayluckydraw2025";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Firestore References
+        const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
+        const regularWinnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
+        const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
+        const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+        const stateDocRef = doc(db, `artifacts/${appId}/public/data/state`, 'uiState');
+
+        // UI Elements
+        const regularDrawContainer = document.getElementById('regularDrawContainer');
+        const grandDrawContainer = document.getElementById('grandDrawContainer');
+        const rollingDisplay = document.getElementById('rolling-display');
+        const winnerList = document.getElementById('winner-list');
+        const particlesContainer = document.getElementById('particles-container');
+        const initialDisplay = document.getElementById('initialDisplay');
+        const rollingSection = document.getElementById('rollingSection');
+        const prizeRollingDisplay = document.getElementById('prizeRollingDisplay');
+        const prizeRollingImage = document.getElementById('prizeRollingImage');
+        const prizeRollingText = document.getElementById('prizeRollingText');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const initialPrizeText = document.getElementById('initialPrizeText');
+        const initialPrizeImage = document.getElementById('initialPrizeImage');
+            
+        // Modal elements
+        const winnerModal = document.getElementById('winnerModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalWinnerName = document.getElementById('modalWinnerName');
+        const modalPrizeName = document.getElementById('modalPrizeName');
+        const modalPrizeImage = document.getElementById('modalPrizeImage');
+        const modalWinnerPrizeName = document.getElementById('modalWinnerPrizeName');
+
+        // Grand Draw Elements
+        const grandPrizeTitle = document.getElementById('grandPrizeTitle');
+        const grandWinnersList = document.getElementById('grandWinnersList');
+        const rollingGrandPrizeDisplay = document.getElementById('rollingGrandPrizeDisplay');
+
+        // Backup UI Buttons (as requested)
+        const buttonsContainerUI = document.getElementById('buttonsContainer');
+        const startButtonUI = document.getElementById('startButtonUI');
+        const resetButtonUI = document.getElementById('resetButtonUI');
+        const grandButtonsContainerWrapperUI = document.getElementById('grandButtonsContainerWrapperUI');
+        const drawGrandPrize1UI = document.getElementById('drawGrandPrize1UI');
+        const drawGrandPrize2UI = document.getElementById('drawGrandPrize2UI');
+        const drawGrandPrize3UI = document.getElementById('drawGrandPrize3UI');
+        const audioToggleButton = document.getElementById('audioToggleButton');
+        const visibilityToggleButton = document.getElementById('visibilityToggleButton');
+        const eyeOpenIcon = document.getElementById('eyeOpenIcon');
+        const eyeClosedIcon = document.getElementById('eyeClosedIcon');
+        const toggleDrawButton = document.getElementById('toggleDrawButton');
+
+        // Audio
+        let isAudioEnabled = true;
+        const rollingAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/y2mate.com%20-%20RULETA%20TABLERO%20FINAL%20MP4%20(1).mp3');
+        rollingAudio.loop = true;
+        const victoryAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/victory.mp3');
+        victoryAudio.loop = false;
+        const excitedAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/excited.mp3');
+        excitedAudio.loop = true;
+        
+        let allParticipants = [];
+        let rollingInterval;
+
+        // Audio and visibility controls
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            if (isAudioEnabled) {
+                audioToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+            } else {
+                rollingAudio.pause();
+                victoryAudio.pause();
+                excitedAudio.pause();
+                audioToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-x"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>`;
+            }
+        }
+            
+        function toggleButtonsVisibility() {
+            let isHidden;
+            if (!regularDrawContainer.classList.contains('d-none')) {
+                isHidden = buttonsContainerUI.classList.toggle('d-none');
+            } else {
+                isHidden = grandButtonsContainerWrapperUI.classList.toggle('d-none');
+            }
+            if (isHidden) {
+                eyeOpenIcon.classList.add('hidden');
+                eyeClosedIcon.classList.remove('hidden');
+            } else {
+                eyeOpenIcon.classList.remove('hidden');
+                eyeClosedIcon.classList.add('hidden');
+            }
+        }
+
+        function toggleDrawMode() {
+            if (!regularDrawContainer.classList.contains('d-none')) {
+                regularDrawContainer.classList.add('d-none');
+                grandDrawContainer.classList.remove('d-none');
+                toggleDrawButton.textContent = 'B';
+                
+            } else {
+                regularDrawContainer.classList.remove('d-none');
+                grandDrawContainer.classList.add('d-none');
+                toggleDrawButton.textContent = 'G';
+            }
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+            
+        function createParticles() {
+            const particleCount = 25;
+            const colors = ['white', 'gold'];
+            particlesContainer.innerHTML = '';
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                const size = Math.random() * 2 + 1;
+                const duration = Math.random() * 10 + 10;
+                const delay = Math.random() * -duration;
+                const xStart = Math.random() * 100;
+                const yStart = Math.random() * 100;
+                const xEnd = Math.random() * 100;
+                const yEnd = Math.random() * 100;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.classList.add('particle');
+                if (color === 'white') {
+                    particle.classList.add('particle-white-glow');
+                } else {
+                    particle.classList.add('particle-gold-glow');
+                }
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.setProperty('--x-start', `${xStart}vw`);
+                particle.style.setProperty('--y-start', `${yStart}vh`);
+                particle.style.setProperty('--x-end', `${xEnd}vw`);
+                particle.style.setProperty('--y-end', `${yEnd}vh`);
+                particle.style.setProperty('--size', size);
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        function showWinnerPopup(winnerName, prize) {
+            modalWinnerName.textContent = winnerName;
+            modalWinnerPrizeName.textContent = prize.name;
+            modalPrizeImage.src = prize.image;
+            winnerModal.classList.add('open');
+            fireConfetti();
+            if (isAudioEnabled) {
+                victoryAudio.currentTime = 0;
+                victoryAudio.play().catch(e => console.error("Victory audio play failed:", e));
+            }
+        }
+
+        function hideWinnerPopup() {
+            winnerModal.classList.remove('open');
+            victoryAudio.pause();
+            victoryAudio.currentTime = 0;
+        }
+
+        async function speakText(text) {
+             const ttsUrl = `https://tts-api.netlify.app/?text=${encodeURIComponent(text)}&lang=id&speed=1.3&pitch=0.85`;
+             if (isAudioEnabled) {
+                new Audio(ttsUrl).play().catch(e => console.error("TTS audio play failed:", e));
+             }
+        }
+
+        function fireConfetti() {
+            const myConfetti = confetti.create(confettiCanvas, {
+                resize: true,
+                useWorker: true
+            });
+            const count = 200;
+            const defaults = {
+                origin: { y: 0.7 }
+            };
+            function fire(particleRatio, opts) {
+                myConfetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+            fire(0.25, {
+                spread: 26,
+                startVelocity: 55,
+            });
+            fire(0.2, {
+                spread: 60,
+            });
+            fire(0.35, {
+                spread: 100,
+                decay: 0.91,
+                scalar: 0.8
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 25,
+                decay: 0.92,
+                scalar: 1.2
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 45,
+            });
+        }
+        
+        async function fetchInitialParticipants() {
+            const snapshot = await getDocs(participantsColRef);
+            allParticipants = snapshot.docs.map(doc => doc.data().name);
+        }
+
+        function startRolling(winnerName) {
+            clearInterval(rollingInterval);
+            if (isAudioEnabled) {
+                rollingAudio.play().catch(e => console.error("Rolling audio play failed:", e));
+            }
+            
+            rollingDisplay.classList.remove('stopped-white');
+            rollingDisplay.classList.add('rolling-gold');
+            rollingGrandPrizeDisplay.classList.remove('stopped-white');
+            rollingGrandPrizeDisplay.classList.add('rolling-gold');
+            
+            const namesToRoll = [...allParticipants];
+            shuffleArray(namesToRoll);
+            
+            const rollSpeed = 50;
+            let rollIndex = 0;
+            rollingInterval = setInterval(() => {
+                rollingDisplay.textContent = namesToRoll[rollIndex];
+                rollingGrandPrizeDisplay.textContent = namesToRoll[rollIndex];
+                rollIndex = (rollIndex + 1) % namesToRoll.length;
+            }, rollSpeed);
+        }
+
+        function stopRolling(winnerName, mode) {
+            clearInterval(rollingInterval);
+            rollingAudio.pause();
+            rollingAudio.currentTime = 0;
+
+            if (mode === 'regular') {
+                rollingDisplay.textContent = winnerName;
+                rollingDisplay.classList.remove('rolling-gold');
+                rollingDisplay.classList.add('stopped-white');
+                const firstName = winnerName.split(' ')[0];
+                const textToSpeak = `Selamat kepada ${firstName}`;
+                speakText(textToSpeak);
+            } else {
+                rollingGrandPrizeDisplay.textContent = winnerName;
+                rollingGrandPrizeDisplay.classList.remove('rolling-gold');
+                rollingGrandPrizeDisplay.classList.add('stopped-white');
+            }
+        }
+        
+        // This variable is now managed by the UI itself to determine roll duration
+        let isFirstRoll = true;
+
+        onSnapshot(stateDocRef, async (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // Switch mode based on remote
+                if (data.mode === 'regular') {
+                    regularDrawContainer.classList.remove('d-none');
+                    grandDrawContainer.classList.add('d-none');
+                } else {
+                    regularDrawContainer.classList.add('d-none');
+                    grandDrawContainer.classList.remove('d-none');
+                }
+
+                // Handle UI based on state
+                if (data.status === 'idle') {
+                    stopRolling("", data.mode);
+                    initialDisplay.classList.remove('d-none');
+                    rollingSection.classList.add('d-none');
+                    grandPrizeTitle.textContent = "Pemenang Grand Lucky Draw";
+                    
+                    if (data.currentPrize) {
+                        initialPrizeText.textContent = data.currentPrize.name;
+                        initialPrizeImage.src = data.currentPrize.image;
+                    }
+
+                    // Reset roll timing for the next fresh draw
+                    isFirstRoll = true;
+                    winnerList.classList.add('d-none');
+                } else if (data.status === 'rolling') {
+                    initialDisplay.classList.add('d-none');
+                    winnerList.classList.remove('d-none');
+
+                    if (data.mode === 'regular') {
+                        rollingSection.classList.remove('d-none');
+                        grandDrawContainer.classList.add('d-none');
+                        prizeRollingText.textContent = data.currentPrize.name;
+                        prizeRollingImage.src = data.currentPrize.image;
+                    } else { // grand mode
+                        rollingSection.classList.add('d-none');
+                        grandDrawContainer.classList.remove('d-none');
+                        grandPrizeTitle.textContent = `Mengundi Pemenang untuk ${data.currentPrize.name}...`;
+                    }
+                    
+                    startRolling(data.winner.name);
+                    
+                    const rollDuration = isFirstRoll ? 3000 : 700;
+                    
+                    setTimeout(async () => {
+                        stopRolling(data.winner.name, data.mode);
+                        
+                        let prize;
+                        const configSnap = await getDoc(configDocRef);
+                        if (data.mode === 'regular') {
+                            const prizes = configSnap.data()?.prizes;
+                            prize = prizes.find(p => p.id === data.currentPrize.id);
+                        } else {
+                            const grandPrizes = configSnap.data()?.grandPrizes;
+                            prize = grandPrizes.find(p => p.id === data.currentPrize.id);
+                            showWinnerPopup(data.winner.name, prize);
+                        }
+                        
+                        isFirstRoll = false; // Next roll will be faster
+                    }, rollDuration);
+
+                } else if (data.status === 'stopped' && data.mode === 'grand') {
+                    // Specific logic for Grand Draw stopping
+                    stopRolling(data.winner.name, 'grand');
+                    const configSnap = await getDoc(configDocRef);
+                    const grandPrizes = configSnap.data()?.grandPrizes;
+                    const prize = grandPrizes.find(p => p.id === data.currentPrize.id);
+                    showWinnerPopup(data.winner.name, prize);
+                } else if (data.status === 'reset') {
+                     // Reset UI to initial state
+                     initialDisplay.classList.remove('d-none');
+                     rollingSection.classList.add('d-none');
+                     grandDrawContainer.classList.add('d-none');
+                     winnerList.innerHTML = '<p class="placeholder-text">Pemenang akan muncul di sini</p>';
+                     winnerList.classList.add('d-none');
+                     grandWinnersList.innerHTML = '';
+                     initialPrizeText.textContent = 'Belum Dipilih';
+                     initialPrizeImage.src = 'https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH';
+                }
+            }
+        });
+
+        // Listeners for winner lists
+        onSnapshot(regularWinnersColRef, (snapshot) => {
+            winnerList.innerHTML = '';
+            if (snapshot.empty) {
+                winnerList.innerHTML = '<p class="placeholder-text">Pemenang akan muncul di sini</p>';
+            } else {
+                snapshot.docs.sort((a, b) => a.data().timestamp - b.data().timestamp).forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('winner-name');
+                    item.innerHTML = `<span>${data.name}</span>`;
+                    winnerList.prepend(item);
+                });
+            }
+        });
+        
+        onSnapshot(grandWinnersColRef, (snapshot) => {
+            grandWinnersList.innerHTML = '';
+            const grandPrizes = [];
+            
+            getDoc(configDocRef).then(docSnap => {
+                const configData = docSnap.data();
+                if (configData && configData.grandPrizes) {
+                    configData.grandPrizes.forEach(p => {
+                        grandPrizes[p.rank - 1] = { ...p, winner: null };
+                    });
+                }
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const rank = data.prizeRank - 1;
+                    if (grandPrizes[rank]) {
+                        grandPrizes[rank].winner = data;
+                    }
+                });
+
+                grandPrizes.sort((a, b) => a.rank - b.rank);
+
+                grandPrizes.forEach((prize, index) => {
+                    const item = document.createElement('div');
+                    item.classList.add('grand-prize-list-item', `won-${prize.rank}`);
+                    let winnerName = prize.winner ? prize.winner.name : "Belum ada pemenang";
+                    item.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="prize-name">${prize.name}</span>
+                        </div>
+                        <span class="winner-text">${winnerName}</span>
+                    `;
+                    grandWinnersList.appendChild(item);
+                });
+            });
+        });
+
+        // Event listener for modal
+        closeModalButton.addEventListener('click', hideWinnerPopup);
+        winnerModal.addEventListener('click', (event) => {
+            if (event.target === winnerModal) {
+                hideWinnerPopup();
+            }
+        });
+
+        // Add event listeners for UI buttons
+        audioToggleButton.addEventListener('click', toggleAudio);
+        visibilityToggleButton.addEventListener('click', toggleButtonsVisibility);
+        toggleDrawButton.addEventListener('click', toggleDrawMode);
+
+        window.onload = () => {
+            createParticles();
+            fetchInitialParticipants();
+        };
+
+    </script>
+</body>
+</html>
