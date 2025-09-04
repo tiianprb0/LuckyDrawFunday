@@ -85,7 +85,7 @@
             color: white;
         }
 
-        .button-primary:hover {
+        .button-primary:hover:not(:disabled) {
             background-color: var(--secondary);
             transform: translateY(-1px);
         }
@@ -95,7 +95,7 @@
             color: white;
         }
 
-        .button-danger:hover {
+        .button-danger:hover:not(:disabled) {
             opacity: 0.8;
         }
 
@@ -104,8 +104,14 @@
             color: white;
         }
         
-        .button-secondary:hover {
+        .button-secondary:hover:not(:disabled) {
             background-color: #666;
+        }
+
+        .button:disabled {
+            background-color: #e0e0e0;
+            color: #a0a0a0;
+            cursor: not-allowed;
         }
 
         .password-container {
@@ -232,8 +238,13 @@
             align-items: center;
             padding: 0.5rem 0;
             border-bottom: 1px solid var(--border);
+            position: relative;
         }
 
+        .winner-list-item .delete-button {
+            position: absolute;
+            right: 0;
+        }
     </style>
 </head>
 <body>
@@ -269,7 +280,7 @@
                 <button id="addParticipantButton" class="button button-primary">Tambah Peserta</button>
             </div>
             <div id="participantsList" class="list-container"></div>
-            <button id="resetParticipantsButton" class="button button-danger" style="width: 100%; margin-top: 1rem;">Reset Semua Peserta Yang Sudah Diundi</button>
+            <button id="resetWinnersButton" class="button button-danger" style="width: 100%; margin-top: 1rem;">Reset Semua Pemenang</button>
         </div>
 
         <div id="regular-prizes-tab" class="tab-content">
@@ -296,8 +307,13 @@
 
         <div id="winners-tab" class="tab-content">
             <h2>Pemenang Undian</h2>
-            <div id="winnersList" class="list-container">
-                <p style="text-align: center; color: var(--gray); font-style: italic;">Pemenang akan muncul di sini</p>
+            <p>Pemenang undian biasa:</p>
+            <div id="regularWinnersList" class="list-container">
+                <p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang undian biasa.</p>
+            </div>
+            <p style="margin-top: 1rem;">Pemenang Grand Lucky Draw:</p>
+            <div id="grandWinnersList" class="list-container">
+                <p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang Grand Lucky Draw.</p>
             </div>
         </div>
     </div>
@@ -306,10 +322,22 @@
     <div id="resetModal" class="modal">
         <div class="modal-content">
             <h3>Konfirmasi Reset</h3>
-            <p>Anda yakin ingin mereset daftar pemenang? Nama-nama yang sudah menang akan kembali ke daftar undian.</p>
+            <p>Anda yakin ingin mereset semua daftar pemenang? Nama-nama yang sudah menang akan kembali ke daftar undian.</p>
             <div class="modal-buttons">
                 <button id="confirmResetButton" class="button button-danger">Reset</button>
                 <button id="cancelResetButton" class="button button-secondary">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk konfirmasi hapus pemenang -->
+    <div id="deleteWinnerModal" class="modal">
+        <div class="modal-content">
+            <h3>Konfirmasi Hapus Pemenang</h3>
+            <p>Anda yakin ingin menghapus pemenang ini? Nama mereka akan dikembalikan ke daftar undian.</p>
+            <div class="modal-buttons">
+                <button id="confirmDeleteButton" class="button button-danger">Hapus</button>
+                <button id="cancelDeleteButton" class="button button-secondary">Batal</button>
             </div>
         </div>
     </div>
@@ -362,7 +390,7 @@
         const participantNamesInput = document.getElementById('participantNames');
         const addParticipantButton = document.getElementById('addParticipantButton');
         const participantsList = document.getElementById('participantsList');
-        const resetParticipantsButton = document.getElementById('resetParticipantsButton');
+        const resetWinnersButton = document.getElementById('resetWinnersButton');
 
         const prizeNameInput = document.getElementById('prizeName');
         const prizeImageInput = document.getElementById('prizeImage');
@@ -376,10 +404,17 @@
         const addGrandPrizeButton = document.getElementById('addGrandPrizeButton');
         const grandPrizesList = document.getElementById('grandPrizesList');
         
-        const winnersList = document.getElementById('winnersList');
+        const regularWinnersList = document.getElementById('regularWinnersList');
+        const grandWinnersList = document.getElementById('grandWinnersList');
         const resetModal = document.getElementById('resetModal');
         const confirmResetButton = document.getElementById('confirmResetButton');
         const cancelResetButton = document.getElementById('cancelResetButton');
+
+        const deleteWinnerModal = document.getElementById('deleteWinnerModal');
+        const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+        const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+
+        let winnerToDelete = null;
 
         function showAdminMessage(message, isError = false) {
             const el = document.getElementById('adminMessage');
@@ -416,7 +451,7 @@
             const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
-            const stateRef = doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize');
+            const stateRef = doc(db, `artifacts/${appId}/public/data/state`, 'uiState');
 
 
             // Listeners for real-time updates
@@ -435,9 +470,9 @@
             });
             
             onSnapshot(winnersColRef, (snapshot) => {
-                winnersList.innerHTML = '';
+                regularWinnersList.innerHTML = '';
                 if (snapshot.empty) {
-                    winnersList.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang undian biasa.</p>';
+                    regularWinnersList.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang undian biasa.</p>';
                     return;
                 }
                 snapshot.forEach(doc => {
@@ -445,19 +480,39 @@
                     const item = document.createElement('div');
                     item.classList.add('winner-list-item');
                     item.innerHTML = `
-                        <span>${data.name}</span>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <img src="${data.prizeImage}" onerror="this.src='https://placehold.co/30x30/E0E0E0/4B4B4B?text=H';" alt="${data.prizeName}" class="prize-image-preview">
-                            <span>${data.prizeName}</span>
+                        <div>
+                            <span>${data.name}</span>
+                            <div style="font-size: 0.9rem; color: var(--gray);">
+                                <span>Hadiah: ${data.prizeName}</span>
+                            </div>
                         </div>
+                        <button class="button button-danger delete-winner" data-id="${doc.id}" data-type="regular">Hapus</button>
                     `;
-                    winnersList.appendChild(item);
+                    regularWinnersList.appendChild(item);
                 });
             });
             
             onSnapshot(grandWinnersColRef, (snapshot) => {
-                // You can add grand winner handling here if needed
-                // For now, this is just a placeholder
+                grandWinnersList.innerHTML = '';
+                if (snapshot.empty) {
+                    grandWinnersList.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada pemenang Grand Lucky Draw.</p>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.classList.add('winner-list-item');
+                    item.innerHTML = `
+                        <div>
+                            <span>${data.name}</span>
+                            <div style="font-size: 0.9rem; color: var(--gray);">
+                                <span>Hadiah: ${data.prizeName} (${data.prizeRank})</span>
+                            </div>
+                        </div>
+                        <button class="button button-danger delete-winner" data-id="${doc.id}" data-type="grand">Hapus</button>
+                    `;
+                    grandWinnersList.appendChild(item);
+                });
             });
 
             onSnapshot(configDocRef, (docSnap) => {
@@ -521,7 +576,7 @@
                 }
             });
             
-            resetParticipantsButton.addEventListener('click', () => {
+            resetWinnersButton.addEventListener('click', () => {
                 resetModal.style.display = 'flex';
             });
             
@@ -546,9 +601,9 @@
                         batch.delete(d.ref);
                     });
                     
-                    // Reset regular prize state
-                    batch.set(stateRef, { winnerCount: 0 }, { merge: true });
-                    
+                    // Reset UI state
+                    await setDoc(stateRef, { mode: 'regular', status: 'reset', timestamp: Date.now() }, { merge: true });
+
                     await batch.commit();
                     showAdminMessage('Berhasil mereset semua pemenang.');
                 } catch (e) {
@@ -557,6 +612,54 @@
                 }
             });
 
+            regularWinnersList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-winner')) {
+                    winnerToDelete = {
+                        id: e.target.getAttribute('data-id'),
+                        type: e.target.getAttribute('data-type')
+                    };
+                    deleteWinnerModal.style.display = 'flex';
+                }
+            });
+            
+            grandWinnersList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-winner')) {
+                    winnerToDelete = {
+                        id: e.target.getAttribute('data-id'),
+                        type: e.target.getAttribute('data-type')
+                    };
+                    deleteWinnerModal.style.display = 'flex';
+                }
+            });
+
+            confirmDeleteButton.addEventListener('click', async () => {
+                if (winnerToDelete) {
+                    deleteWinnerModal.style.display = 'none';
+                    try {
+                        let collectionRef;
+                        if (winnerToDelete.type === 'regular') {
+                            collectionRef = winnersColRef;
+                        } else {
+                            collectionRef = grandWinnersColRef;
+                        }
+
+                        // Hapus dokumen pemenang
+                        await deleteDoc(doc(collectionRef, winnerToDelete.id));
+                        showAdminMessage('Pemenang berhasil dihapus. Nama akan kembali ke undian.');
+                    } catch (e) {
+                        console.error("Error deleting winner:", e);
+                        showAdminMessage('Gagal menghapus pemenang.', true);
+                    } finally {
+                        winnerToDelete = null;
+                    }
+                }
+            });
+
+            cancelDeleteButton.addEventListener('click', () => {
+                deleteWinnerModal.style.display = 'none';
+                winnerToDelete = null;
+            });
+            
             addPrizeButton.addEventListener('click', async () => {
                 const name = prizeNameInput.value.trim();
                 const image = prizeImageInput.value.trim();
