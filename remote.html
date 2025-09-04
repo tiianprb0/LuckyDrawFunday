@@ -229,7 +229,6 @@
         .winner-select-button:hover:not(:disabled) {
             background-color: #43a047;
         }
-
     </style>
 </head>
 <body>
@@ -257,12 +256,15 @@
             <h2>Pilih Hadiah & Kontrol Undian</h2>
             <div id="currentPrizeInfo">
                 <p>Hadiah yang akan diundi: <span id="currentPrizeName" style="font-weight: 600; color: var(--primary);">Belum dipilih</span></p>
+                <div id="currentPrizeImageContainer" style="display: none; margin-top: 1rem;">
+                    <img id="currentPrizeImage" src="" alt="Hadiah yang dipilih" style="width: 100px; height: auto; border-radius: 0.5rem;">
+                </div>
             </div>
             <div class="input-group">
-                <button id="startButton" class="button button-primary">Mulai Undian</button>
-                <button id="stopButton" class="button button-danger" disabled>Selesai</button>
+                <button id="startButton" class="button button-primary" disabled>Mulai Undian</button>
+                <button id="resetDrawButton" class="button button-secondary">Reset Undian</button>
             </div>
-            <p>Pilih hadiah yang akan diundi:</p>
+            <p style="margin-top: 1rem;">Pilih hadiah yang akan diundi:</p>
             <div id="regularPrizesList" class="list-container"></div>
         </div>
 
@@ -276,7 +278,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot, writeBatch, query, where, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         
         const firebaseConfig = {
@@ -298,8 +300,9 @@
         let prizes = [];
         let grandPrizes = [];
         let selectedPrizeId = null;
-        let isDrawRunning = false;
-        
+        let selectedPrizeQuota = 0;
+        let winnersForPrize = 0;
+
         const REMOTE_PASSWORD = "kerentian";
 
         const passwordInput = document.getElementById('passwordInput');
@@ -313,13 +316,21 @@
         const tabContents = document.querySelectorAll('.tab-content');
 
         const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
+        const resetDrawButton = document.getElementById('resetDrawButton');
         const regularPrizesList = document.getElementById('regularPrizesList');
-        const currentPrizeName = document.getElementById('currentPrizeName');
+        const currentPrizeNameEl = document.getElementById('currentPrizeName');
+        const currentPrizeImageEl = document.getElementById('currentPrizeImage');
+        const currentPrizeImageContainerEl = document.getElementById('currentPrizeImageContainer');
 
         const grandPrizesList = document.getElementById('grandPrizesList');
         const grandPrizeMessage = document.getElementById('grandPrizeMessage');
-
+        
+        // Firestore References
+        const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+        const stateDocRef = doc(db, `artifacts/${appId}/public/data/state`, 'uiState');
+        const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
+        const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
+        const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
 
         loginButton.addEventListener('click', () => {
             if (passwordInput.value === REMOTE_PASSWORD) {
@@ -351,6 +362,16 @@
             });
             document.getElementById(tabId + '-tab').classList.add('active');
             document.querySelector(`.tab-button[data-tab='${tabId}']`).classList.add('active');
+
+            // Update UI state in Firestore
+            setDoc(stateDocRef, { mode: tabId === 'regular' ? 'regular' : 'grand', status: 'idle', timestamp: Date.now() }, { merge: true });
+            
+            // Re-render based on new tab
+            if (tabId === 'regular') {
+                updateRegularUI();
+            } else {
+                updateGrandUI();
+            }
         }
 
         tabButtons.forEach(button => {
@@ -362,8 +383,7 @@
         
         async function fetchInitialData() {
             try {
-                const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
-                const configSnap = await getDoc(configRef);
+                const configSnap = await getDoc(configDocRef);
                 const drawConfig = configSnap.data();
 
                 if (drawConfig) {
@@ -371,28 +391,29 @@
                     grandPrizes = drawConfig.grandPrizes || [];
                 }
 
-                const allParticipantsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/participants`));
+                // Ambil semua peserta dan pemenang untuk memfilter
+                const allParticipantsSnapshot = await getDocs(participantsColRef);
                 allParticipants = allParticipantsSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
 
-                const winnersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/winners`));
-                const grandWinnersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/grandWinners`));
-
-                const winnerNames = winnersSnapshot.docs.map(doc => doc.data().name);
-                const grandWinnerNames = grandWinnersSnapshot.docs.map(doc => doc.data().name);
-
-                // Filter out already won participants
-                remainingParticipants = allParticipants.filter(p => !winnerNames.includes(p.name) && !grandWinnerNames.includes(p.name));
+                const winnersSnapshot = await getDocs(winnersColRef);
+                const grandWinnersSnapshot = await getDocs(grandWinnersColRef);
+                const wonParticipantIds = new Set([
+                    ...winnersSnapshot.docs.map(doc => doc.data().participantId),
+                    ...grandWinnersSnapshot.docs.map(doc => doc.data().participantId)
+                ]);
                 
-                renderPrizes();
-                renderGrandPrizes();
+                remainingParticipants = allParticipants.filter(p => !wonParticipantIds.has(p.id));
+                
+                updateRegularUI();
+                updateGrandUI();
 
             } catch (error) {
                 console.error("Error fetching data:", error);
                 showRemoteMessage('Gagal mengambil data dari Firestore. Coba lagi.', true);
             }
         }
-
-        function renderPrizes() {
+        
+        function updateRegularUI() {
             regularPrizesList.innerHTML = '';
             prizes.forEach(prize => {
                 const item = document.createElement('div');
@@ -408,14 +429,58 @@
                     document.querySelectorAll('.prize-list-item').forEach(el => el.classList.remove('selected'));
                     item.classList.add('selected');
                     selectedPrizeId = prize.id;
-                    currentPrizeName.textContent = prize.name;
-                    showRemoteMessage(`Hadiah ${prize.name} dipilih.`);
+                    selectedPrizeQuota = prize.quota;
+                    const selectedPrize = prizes.find(p => p.id === selectedPrizeId);
+                    
+                    if (selectedPrize) {
+                        currentPrizeNameEl.textContent = selectedPrize.name;
+                        currentPrizeImageEl.src = selectedPrize.image;
+                        currentPrizeImageContainerEl.style.display = 'block';
+                        startButton.disabled = false;
+                        showRemoteMessage(`Hadiah ${selectedPrize.name} dipilih.`);
+
+                        // Sync UI with the new selected prize
+                        setDoc(stateDocRef, {
+                            mode: 'regular',
+                            status: 'idle',
+                            currentPrize: {
+                                id: selectedPrize.id,
+                                name: selectedPrize.name,
+                                image: selectedPrize.image
+                            },
+                            timestamp: Date.now()
+                        });
+
+                        // Check how many winners already exist for this prize
+                        getDocs(query(winnersColRef, where('prizeId', '==', selectedPrizeId))).then(snap => {
+                            winnersForPrize = snap.size;
+                            updateStartButtonState();
+                        });
+
+                    } else {
+                        showRemoteMessage('Hadiah tidak valid.', true);
+                    }
                 });
                 regularPrizesList.appendChild(item);
             });
         }
         
-        function renderGrandPrizes() {
+        function updateStartButtonState() {
+            if (selectedPrizeId && winnersForPrize < selectedPrizeQuota && remainingParticipants.length > 0) {
+                startButton.disabled = false;
+                startButton.textContent = 'Mulai Undian';
+            } else if (winnersForPrize >= selectedPrizeQuota) {
+                startButton.disabled = true;
+                startButton.textContent = 'Kuota Habis';
+            } else if (remainingParticipants.length === 0) {
+                 startButton.disabled = true;
+                 startButton.textContent = 'Peserta Habis';
+            } else {
+                startButton.disabled = true;
+            }
+        }
+
+        function updateGrandUI() {
             grandPrizesList.innerHTML = '';
             grandPrizes.forEach(prize => {
                 const item = document.createElement('div');
@@ -428,145 +493,144 @@
                     </div>
                     <button class="button winner-select-button" data-id="${prize.id}">Pilih Pemenang</button>
                 `;
+                item.querySelector('.winner-select-button').addEventListener('click', async (e) => {
+                    e.target.disabled = true;
+                    e.target.textContent = 'Memilih...';
+                    
+                    if (remainingParticipants.length === 0) {
+                        showRemoteMessage('Tidak ada peserta yang tersisa.', true);
+                        e.target.disabled = false;
+                        e.target.textContent = 'Pilih Pemenang';
+                        return;
+                    }
+                    
+                    // Select a random winner
+                    const randomIndex = Math.floor(Math.random() * remainingParticipants.length);
+                    const winner = remainingParticipants[randomIndex];
+                    
+                    // Trigger rolling state on UI with winner info
+                    await setDoc(stateDocRef, {
+                        mode: 'grand',
+                        status: 'rolling',
+                        currentPrize: {
+                             id: prize.id,
+                             name: prize.name,
+                             image: prize.image
+                        },
+                        winner: {
+                            name: winner.name,
+                            id: winner.id
+                        },
+                        timestamp: Date.now()
+                    });
+
+                    // Update UI state to 'stopped' after 5 seconds to stop the rolling animation
+                    setTimeout(async () => {
+                         await updateDoc(stateDocRef, {
+                            status: 'stopped',
+                            timestamp: Date.now()
+                        });
+                    }, 5000);
+                    
+                    // Add winner to Firestore
+                    await addDoc(grandWinnersColRef, {
+                       name: winner.name,
+                       participantId: winner.id,
+                       prizeId: prize.id,
+                       prizeName: prize.name,
+                       prizeImage: prize.image,
+                       prizeRank: prize.rank,
+                       timestamp: Date.now()
+                    });
+                        
+                    // Update local remaining participants
+                    remainingParticipants = remainingParticipants.filter(p => p.id !== winner.id);
+                        
+                    showRemoteMessage(`Pemenang Grand Prize ${prize.rank} (${prize.name}) adalah ${winner.name}.`);
+                    e.target.disabled = false;
+                    e.target.textContent = 'Pilih Pemenang';
+                    updateGrandUI(); // Re-render to show winner in the list
+                });
                 grandPrizesList.appendChild(item);
             });
         }
         
         startButton.addEventListener('click', async () => {
-            if (isDrawRunning) {
-                showRemoteMessage('Undian sudah berjalan.', true);
-                return;
-            }
-            if (!selectedPrizeId) {
-                showRemoteMessage('Pilih hadiah terlebih dahulu.', true);
-                return;
-            }
-
-            const prizeDocRef = doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize');
-            const prize = prizes.find(p => p.id === selectedPrizeId);
-
-            if (!prize) {
-                 showRemoteMessage('Hadiah tidak valid.', true);
-                 return;
-            }
-            
-            // Cek kuota hadiah
-            const prizeSnap = await getDoc(prizeDocRef);
-            let winnerCount = 0;
-            if (prizeSnap.exists() && prizeSnap.data().prizeId === selectedPrizeId) {
-                winnerCount = prizeSnap.data().winnerCount || 0;
-            }
-            
-            if (winnerCount >= prize.quota) {
+            // Check if all winners for this prize have been selected
+            if (winnersForPrize >= selectedPrizeQuota) {
                 showRemoteMessage('Kuota hadiah ini sudah habis.', true);
                 return;
             }
-            
             if (remainingParticipants.length === 0) {
                  showRemoteMessage('Tidak ada peserta yang tersisa untuk diundi.', true);
                  return;
             }
-            
-            isDrawRunning = true;
+
             startButton.disabled = true;
-            stopButton.disabled = false;
+            startButton.textContent = 'Sedang Mengundi...';
             
-            const drawStatusRef = doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus');
-            await setDoc(drawStatusRef, {
-                isStarted: true,
-                prizeId: selectedPrizeId,
-                winnerId: null,
+            // Pilih pemenang secara acak dari peserta yang tersisa
+            const randomIndex = Math.floor(Math.random() * remainingParticipants.length);
+            const winner = remainingParticipants[randomIndex];
+            
+            const prize = prizes.find(p => p.id === selectedPrizeId);
+            
+            // Trigger rolling state on UI with winner info
+            await updateDoc(stateDocRef, {
+                status: 'rolling',
+                winner: { name: winner.name, id: winner.id },
+                currentPrize: {
+                    id: selectedPrizeId,
+                    name: prize.name,
+                    image: prize.image,
+                    quota: prize.quota
+                },
                 timestamp: Date.now()
             });
 
-            showRemoteMessage('Undian dimulai! Tampilan UI utama akan berputar.');
-        });
+            // After a set duration, update state to 'stopped' to stop the rolling animation.
+            // This is handled on the UI side now.
 
-        stopButton.addEventListener('click', async () => {
-            if (!isDrawRunning) {
-                showRemoteMessage('Undian belum dimulai.', true);
-                return;
-            }
-            
-            if (remainingParticipants.length === 0) {
-                 showRemoteMessage('Tidak ada peserta yang tersisa untuk diundi.', true);
-                 return;
-            }
-            
-            // Ambil pemenang acak
-            const randomIndex = Math.floor(Math.random() * remainingParticipants.length);
-            const winner = remainingParticipants[randomIndex];
-
-            // Tambahkan pemenang ke collection 'winners'
-            const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
-            const prize = prizes.find(p => p.id === selectedPrizeId);
+            // Add winner to Firestore
             await addDoc(winnersColRef, {
                 name: winner.name,
+                participantId: winner.id,
                 prizeId: selectedPrizeId,
                 prizeName: prize.name,
                 prizeImage: prize.image,
                 timestamp: Date.now()
             });
-            
-            // Perbarui status undian
-            const drawStatusRef = doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus');
-            await setDoc(drawStatusRef, {
-                isStarted: false,
-                winnerId: winner.id,
-                timestamp: Date.now()
-            }, { merge: true });
 
-            // Perbarui kuota hadiah
-            const prizeStateRef = doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize');
-            const prizeSnap = await getDoc(prizeStateRef);
-            let winnerCount = 0;
-            if (prizeSnap.exists() && prizeSnap.data().prizeId === selectedPrizeId) {
-                winnerCount = prizeSnap.data().winnerCount || 0;
-            }
-            await setDoc(prizeStateRef, { prizeId: selectedPrizeId, winnerCount: winnerCount + 1 }, { merge: true });
-
-            isDrawRunning = false;
-            startButton.disabled = false;
-            stopButton.disabled = true;
-
-            showRemoteMessage(`Pemenang undian: ${winner.name}`);
-            
-            // Perbarui daftar peserta yang tersisa
+            // Update local state
+            winnersForPrize++;
             remainingParticipants = remainingParticipants.filter(p => p.id !== winner.id);
-        });
+            showRemoteMessage(`Pemenang undian: ${winner.name}`);
 
-        grandPrizesList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('winner-select-button')) {
-                const prizeId = e.target.getAttribute('data-id');
-                const prize = grandPrizes.find(p => p.id === prizeId);
-                
-                if (remainingParticipants.length === 0) {
-                     grandPrizeMessage.textContent = 'Tidak ada peserta yang tersisa.';
-                     grandPrizeMessage.classList.add('error');
-                     grandPrizeMessage.style.display = 'block';
-                     return;
-                }
-                
-                // Ambil pemenang acak
-                const randomIndex = Math.floor(Math.random() * remainingParticipants.length);
-                const winner = remainingParticipants[randomIndex];
-
-                // Tambahkan pemenang ke collection 'grandWinners'
-                const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
-                await addDoc(grandWinnersColRef, {
-                    name: winner.name,
-                    prizeId: prizeId,
-                    prizeName: prize.name,
-                    prizeImage: prize.image,
-                    prizeRank: prize.rank,
+            // Reset UI state to idle after a delay to stop the rolling animation and show the next name
+            setTimeout(async () => {
+                await updateDoc(stateDocRef, {
+                    status: 'idle',
+                    winner: null,
                     timestamp: Date.now()
                 });
+                updateStartButtonState(); // Check if more draws are needed
+            }, 3700); // 3000ms (first roll) + 700ms (second roll)
 
-                showRemoteMessage(`Pemenang Grand Prize ${prize.rank} (${prize.name}) adalah ${winner.name}.`);
-                
-                // Perbarui daftar peserta yang tersisa
-                remainingParticipants = remainingParticipants.filter(p => p.id !== winner.id);
-            }
+        });
+        
+        resetDrawButton.addEventListener('click', async () => {
+             await setDoc(stateDocRef, {
+                 mode: 'regular',
+                 status: 'reset',
+                 currentPrize: null,
+                 winner: null,
+                 timestamp: Date.now()
+             });
+             showRemoteMessage('Undian direset.');
+             // Refetch data to re-enable start button
+             fetchInitialData();
+             currentPrizeNameEl.textContent = 'Belum dipilih';
+             currentPrizeImageContainerEl.style.display = 'none';
         });
 
         function initRemote() {
