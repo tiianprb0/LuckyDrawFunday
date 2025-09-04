@@ -159,7 +159,7 @@
             border-radius: 0.25rem;
         }
         
-        .message-box {
+.message-box {
             background-color: var(--green-success);
             color: white;
             padding: 1rem;
@@ -346,8 +346,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, setDoc, addDoc, deleteDoc, query, onSnapshot, where, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
-        // Firebase Config and Auth
+        // Atur level log untuk melihat pesan debug dari Firestore
+        setLogLevel('Debug');
+
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
             authDomain: "fundayluckydraw2025.firebaseapp.com",
@@ -357,18 +361,38 @@
             appId: "1:357768542683:web:221d15b60a7cd12116cffe",
             measurementId: "G-RXN0VTGZ8L"
         };
-        const appId = "fundayluckydraw2025";
+        
+        const appId = firebaseConfig.projectId;
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        let userId = '';
+        
+        // Firebase Auth
+        async function signIn() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                console.log("Firebase signed in successfully.");
+                // Start listeners after successful login
+                initAdmin();
+            } catch (error) {
+                console.error("Firebase sign in failed:", error);
+            }
+        }
+        signIn();
 
+        // UI elements
         const passwordInput = document.getElementById('passwordInput');
         const loginButton = document.getElementById('loginButton');
         const passwordSection = document.getElementById('passwordSection');
         const adminContent = document.getElementById('adminContent');
         const loginMessage = document.getElementById('loginMessage');
 
+        // Ganti dengan password yang aman
         const ADMIN_PASSWORD = "tiian";
         
         loginButton.addEventListener('click', () => {
@@ -376,14 +400,12 @@
                 passwordSection.style.display = 'none';
                 adminContent.style.display = 'block';
                 showAdminMessage('Selamat datang, Admin!', false);
-                initAdmin();
             } else {
                 showAdminMessage('Password salah. Silakan coba lagi.', true);
                 passwordInput.value = '';
             }
         });
 
-        // UI elements
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
 
@@ -451,8 +473,6 @@
             const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
-            const stateRef = doc(db, `artifacts/${appId}/public/data/state`, 'uiState');
-
 
             // Listeners for real-time updates
             onSnapshot(participantsColRef, (snapshot) => {
@@ -525,6 +545,10 @@
 
             function renderPrizes(prizes, listElement, type) {
                 listElement.innerHTML = '';
+                if (prizes.length === 0) {
+                     listElement.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada hadiah.</p>';
+                     return;
+                }
                 prizes.forEach((prize, index) => {
                     const item = document.createElement('div');
                     item.classList.add('list-item');
@@ -589,21 +613,16 @@
                 try {
                     const batch = writeBatch(db);
                     
-                    // Delete all regular winners
                     const winnersSnap = await getDocs(winnersColRef);
                     winnersSnap.forEach(d => {
                         batch.delete(d.ref);
                     });
 
-                    // Delete all grand winners
                     const grandWinnersSnap = await getDocs(grandWinnersColRef);
                     grandWinnersSnap.forEach(d => {
                         batch.delete(d.ref);
                     });
                     
-                    // Reset UI state
-                    await setDoc(stateRef, { mode: 'regular', status: 'reset', timestamp: Date.now() }, { merge: true });
-
                     await batch.commit();
                     showAdminMessage('Berhasil mereset semua pemenang.');
                 } catch (e) {
@@ -642,8 +661,6 @@
                         } else {
                             collectionRef = grandWinnersColRef;
                         }
-
-                        // Hapus dokumen pemenang
                         await deleteDoc(doc(collectionRef, winnerToDelete.id));
                         showAdminMessage('Pemenang berhasil dihapus. Nama akan kembali ke undian.');
                     } catch (e) {
@@ -679,6 +696,8 @@
                         console.error("Error adding prize: ", e);
                         showAdminMessage('Gagal menambahkan hadiah.', true);
                     }
+                } else {
+                     showAdminMessage('Pastikan semua input terisi dengan benar (nama, URL gambar, dan kuota > 0).', true);
                 }
             });
 
@@ -712,6 +731,8 @@
                         console.error("Error adding grand prize: ", e);
                         showAdminMessage('Gagal menambahkan grand prize.', true);
                     }
+                } else {
+                     showAdminMessage('Pastikan semua input terisi dengan benar (nama, URL gambar, dan peringkat > 0).', true);
                 }
             });
 
