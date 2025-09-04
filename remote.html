@@ -632,6 +632,34 @@
              currentPrizeNameEl.textContent = 'Belum dipilih';
              currentPrizeImageContainerEl.style.display = 'none';
         });
+        
+        // Listener for changes in winners and grand winners
+        // This is crucial to keep the `remainingParticipants` array up-to-date
+        onSnapshot(winnersColRef, async (snapshot) => {
+            await fetchInitialData();
+            const stateSnap = await getDoc(stateDocRef);
+            if (stateSnap.exists()) {
+                const mode = stateSnap.data().mode;
+                if (mode === 'regular') {
+                    updateRegularUI();
+                } else {
+                    updateGrandUI();
+                }
+            }
+        });
+        
+        onSnapshot(grandWinnersColRef, async (snapshot) => {
+            await fetchInitialData();
+            const stateSnap = await getDoc(stateDocRef);
+            if (stateSnap.exists()) {
+                const mode = stateSnap.data().mode;
+                if (mode === 'regular') {
+                    updateRegularUI();
+                } else {
+                    updateGrandUI();
+                }
+            }
+        });
 
         function initRemote() {
             fetchInitialData();
