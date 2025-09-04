@@ -642,7 +642,7 @@
             <div id="initialDisplay" class="d-flex flex-col justify-center items-center gap-1rem mt-3rem">
                 <!-- Mengubah ukuran gambar placeholder menjadi lebih kecil -->
                 <div class="w-[500px] h-[375px] rounded-xl border-2 border-primary bg-primary bg-opacity-20 flex justify-center items-center mb-6">
-                    <img id="initialPrizeImage" src="https://placehold.co/800x600/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" alt="Hadiah Lucky Draw" class="w-full h-full object-cover rounded-xl">
+                    <img src="https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH" alt="Hadiah Lucky Draw" class="w-full h-full object-cover rounded-xl">
                 </div>
                 <div class="flex flex-col items-center">
                     <span class="prize-title-text text-center">Prize</span>
@@ -731,71 +731,68 @@
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+    <script>
+        // Array yang berisi 300 nama peserta lucky draw
+        const names = [
+            "Adi Pratama", "Budi Santoso", "Citra Ayu", "Dwi Handayani", "Eka Saputra", "Farhan Rizky", "Galih Prakoso", "Hendra Wijaya", "Indah Permata", "Joko Susanto", "Kartika Sari", "Lestari Putri", "Mira Anggraini", "Nanda Saputri", "Oka Pranata", "Putri Maharani", "Qory Anindya", "Raka Pratama", "Sinta Dewi", "Taufik Hidayat", "Umi Kalsum", "Vina Aulia", "Wahyu Nugroho", "Xenia Larasati", "Yudi Prakoso", "Zahra Nuraini", "Arif Budiman", "Bagus Prasetyo", "Cahya Lestari", "Dian Anggraini", "Erwin Setiawan", "Fajar Ramadhan", "Gita Cahyani", "Hariyanto Putra", "Intan Sari", "Jihan Fauziah", "Kurniawan Saputra", "Laila Fitria", "Mulyono Jati", "Nisa Maulida", "Oki Wibowo", "Prasetya Ananda", "Qiana Putri", "Rizky Maulana", "Sari Indah", "Tri Wahyuni", "Utami Kartika", "Vira Anggun", "Widya Putri", "Yanuar Pratama", "Zaky Ramadhan", "Anisa Putri", "Bambang Irawan", "Cahyono Santoso", "Dewi Sartika", "Eko Nugraha", "Fitriani Lestari", "Gunawan Adi", "Hani Fauziah", "Imam Syafii", "Jefri Kurniawan", "Kiki Amelia", "Lukman Hakim", "Mega Andini", "Novi Rahmawati", "Olin Maharani", "Putra Perdana", "Qaisya Hanum", "Qiana Putri", "Rizky Maulana", "Rudi Hartono", "Silvia Anggraini", "Teguh Wibisono", "Ujang Supriyadi", "Viona Maharani", "Wahid Hidayat", "Xaverius Aldi", "Yuli Astuti", "Zainal Abidin", "Amalia Putri", "Bayu Saputra", "Chintya Maharani", "Danu Prakoso", "Endah Wati", "Fauzan Hidayat", "Guntur Ramadhan", "Hesty Anggraeni", "Indra Gunawan", "Jihan Azzahra", "Krisna Aditya", "Lia Cahyani", "Muhammad Rizky", "Nabila Aulia", "Ozy Pranata", "Putri Anggraeni", "Qomarudin Jati", "Rani Lestari", "Surya Pratama", "Tika Anggraini", "Umar Alamsyah", "Vira Salsabila", "Winda Putri", "Yohana Grace", "Zulfikar Ramadhan", "Adinda Maharani", "Baginda Syahputra", "Cici Amelia", "Deden Ramdani", "Elok Puspita", "Fanny Indah", "Gilang Saputra", "Hendra Pratama", "Intan Maharani", "Joko Riyadi", "Kurnia Dewi", "Lusi Anggraini", "Mita Maharani", "Niko Prasetyo", "Olivia Anggun", "Putri Rahmawati", "Qaisar Rizky", "Rara Anggraini", "Septian Prakoso", "Tya Cahyani", "Uus Supriyadi", "Vira Handayani", "Wahyu Ramadhan", "Yani Marlina", "Zaskia Anindya", "Anwar Sadat", "Bella Maharani", "Candra Pratama", "Dwi Puspita", "Erlangga Putra", "Fitri Handayani", "Gita Maharani", "Hadi Saputra", "Iqbal Ramadhan", "Jihan Lestari", "Kiki Pratama", "Lintang Maharani", "Miko Andriansyah", "Nabila Rahma", "Oki Santoso", "Putri Setiawati", "Qonita Aulia", "Rahmat Hidayat", "Sinta Maharani", "Tono Prasetyo", "Usman Abdullah", "Vina Maharani", "Wanda Putri", "Yogi Pratama", "Zia Amelia", "Aldi Gunawan", "Bima Prasetyo", "Clara Maharani", "Dedi Santoso", "Eka Putri", "Fani Maharani", "Genta Pratama", "Hilda Anggraini", "Indra Kusuma", "Jefri Santoso", "Karina Putri", "Lilis Maharani", "Maman Firmansyah", "Nur Aisyah", "Olla Kartika", "Pandu Pratama", "Qianita Lestari", "Rani Maharani", "Satria Ramadhan", "Tuti Anggraini", "Umi Maharani", "Vera Putri", "Wahyu Santoso", "Yoga Pratama", "Zahra Salsabila", "Andika Pratama", "Bella Cahyani", "Cipto Santoso", "Dewi Kartika", "Evan Ramadhan", "Farida Maharani", "Gibran Pratama", "Hani Maharani", "Ilham Saputra", "Joko Supriyadi", "Kania Lestari", "Lia Maharani", "Mulyadi Prakoso", "Novi Anggraini", "Ovi Putri", "Pratama Jaya", "Qiana Ramadhani", "Rudi Saputra", "Siti Maharani", "Taufik Ramadhan", "Utari Putri", "Vicky Pratama", "Wulan Maharani", "Yani Pratami", "Zainab Aulia", "Arman Saputra", "Bagus Nugroho", "Cahyani Anggun", "Danu Putra", "Elin Maharani", "Fira Putri", "Galang Pratama", "Hendra Saputra", "Intan Maharani", "Jihan Salsabila", "Krisna Ramadhan", "Laila Maharani", "Miko Pratama", "Niken Anggraini", "Okta Putri", "Poppy Maharani", "Qori Ramadhani", "Riko Saputra", "Sinta Kartika", "Tika Maharani", "Ujang Ramadhan", "Via Putri", "Widi Pratama", "Yola Maharani", "Zahra Cahyani", "Agung Prasetyo", "Bella Rahma", "Cici Maharani", "Dwi Saputri", "Endah Maharani", "Fandi Ramadhan", "Guntur Pratama", "Hilda Maharani", "Irfan Nugroho", "Joko Prasetyo", "Karina Maharani", "Lia Salsabila", "Mita Pratiwi", "Nita Maharani", "Oka Saputra", "Putri Anggun", "Qomar Ramadhan", "Rani Kartika", "Sari Maharani", "Tono Ramdani", "Umi Putri", "Vina Anggraini", "Wahid Saputra", "Yuli Maharani", "Zainal Rizky", "Aldi Pratama", "Baginda Putra", "Cinta Maharani", "Dedi Prasetyo", "Eka Maharani", "Fitria Putri", "Galih Saputra", "Hani Anggraini", "Imam Ramadhan", "Jihan Maharani", "Krisna Pratama", "Lusi Putri", "Maman Prakoso", "Nurul Aini", "Ozi Maharani", "Pandu Ramadhan", "Qaisya Putri", "Rudi Maharani", "Satria Nugroho", "Tya Putri", "Usman Saputra", "Vira Maharani", "Wahyu Ramadhan", "Yogi Saputra", "Zahra Maharani", "Andi Prasetyo", "Bella Putri", "Citra Maharani", "Dimas Saputra", "Elsa Maharani", "Fani Pratami", "Guntur Nugroho", "Hendra Maharani", "Ilham Pratama", "Joko Anggara", "Karina Maharani", "Lintang Putri", "Miko Nugroho", "Novi Maharani", "Olin Putri", "Putra Maharani", "Qiana Salsabila", "Rizky Saputra", "Siti Maharani", "Taufik Ramadhan", "Uus Pratama", "Vina Maharani", "Wulan Putri"
+        ];
+            
+        // Daftar hadiah yang akan diundi
+        const prizes = [
+            { name: "Televisi 4K", image: "https://placehold.co/300x225/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" },
+            { name: "Sepeda Motor", image: "https://placehold.co/300x225/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" },
+            { name: "Smartphone Terbaru", image: "https://placehold.co/300x225/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" },
+            { name: "Laptop Gaming", image: "https://placehold.co/300x225/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" },
+            { name: "Voucher Belanja Rp5.000.000", image: "https://placehold.co/300x225/D4AF37/0e2a25?text=Hadiah+Lucky+Draw" }
+        ];
 
-        // Global variables for Firebase
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
-            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
-            authDomain: "fundayluckydraw2025.firebaseapp.com",
-            projectId: "fundayluckydraw2025",
-            storageBucket: "fundayluckydraw2025.firebasestorage.app",
-            messagingSenderId: "357768542683",
-            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
-            measurementId: "G-RXN0VTGZ8L"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const analytics = getAnalytics(app);
+        // Daftar grand prizes
+        const grandPrizes = [
+            { name: "Mobil Elektrik", image: "https://placehold.co/300x225/FFD700/0e2a25?text=Hadiah+Utama+1" },
+            { name: "Liburan ke Bali", image: "https://placehold.co/300x225/C0C0C0/0e2a25?text=Hadiah+Utama+2" },
+            { name: "Uang Tunai Rp100.000.000", image: "https://placehold.co/300x225/CD7F32/0e2a25?text=Hadiah+Utama+3" }
+        ];
 
-        let userIsReady = false;
-        let userId = '';
-
-        const __initial_auth_token = "MANDATORY-TOKEN"; // Placeholder, will be replaced by the system
-
-        // Authenticate the user
-        async function authenticate() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser.uid;
-                userIsReady = true;
-                console.log("Firebase authenticated successfully.");
-            } catch (error) {
-                console.error("Firebase authentication failed:", error);
-            }
-        }
-        
-        // Data Firebase
-        let allParticipants = [];
-        let remainingParticipants = [];
-        let prizes = [];
-        let grandPrizes = [];
-        let currentRegularPrize = null;
-        let winnerCount = 0;
-        let isDrawStarted = false;
-
-        // Get DOM elements
+        const WINNER_COUNT = 50;
+        let sessionPrize;
+        let currentDrawMode = 'regular';
+        let grandWinners = new Array(grandPrizes.length).fill(null);
+            
+        // Mendapatkan elemen-elemen DOM
         const regularDrawContainer = document.getElementById('regularDrawContainer');
         const grandDrawContainer = document.getElementById('grandDrawContainer');
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
         const rollingDisplay = document.getElementById('rolling-display');
         const winnerList = document.getElementById('winner-list');
-        const initialPrizeText = document.getElementById('initialPrizeText');
-        const initialPrizeImage = document.getElementById('initialPrizeImage');
-        const prizeRollingText = document.getElementById('prizeRollingText');
-        const prizeRollingImage = document.getElementById('prizeRollingImage');
+        const particlesContainer = document.getElementById('particles-container');
         const initialDisplay = document.getElementById('initialDisplay');
         const rollingSection = document.getElementById('rollingSection');
-        const grandPrizeTitle = document.getElementById('grandPrizeTitle');
+        const prizeRollingDisplay = document.getElementById('prizeRollingDisplay');
+        const prizeRollingImage = document.getElementById('prizeRollingImage');
+        const prizeRollingText = document.getElementById('prizeRollingText');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const initialPrizeText = document.getElementById('initialPrizeText');
+            
+        const audioToggleButton = document.getElementById('audioToggleButton');
+        const visibilityToggleButton = document.getElementById('visibilityToggleButton');
+        const buttonsContainer = document.getElementById('buttonsContainer');
+        const eyeOpenIcon = document.getElementById('eyeOpenIcon');
+        const eyeClosedIcon = document.getElementById('eyeClosedIcon');
 
+        // Elemen-elemen untuk Grand Lucky Draw
+        const toggleDrawButton = document.getElementById('toggleDrawButton');
+        const grandPrizeWinnerDisplay = document.getElementById('grandPrizeWinnerDisplay');
+        const grandWinnersList = document.getElementById('grandWinnersList');
+        const drawGrandPrizeButtons = [
+            document.getElementById('drawGrandPrize1'),
+            document.getElementById('drawGrandPrize2'),
+            document.getElementById('drawGrandPrize3')
+        ];
+        const grandButtonsContainerWrapper = document.getElementById('grandButtonsContainerWrapper');
+        const rollingGrandPrizeDisplay = document.getElementById('rollingGrandPrizeDisplay');
+
+        // Modal elements
         const winnerModal = document.getElementById('winnerModal');
         const closeModalButton = document.getElementById('closeModalButton');
         const modalWinnerName = document.getElementById('modalWinnerName');
@@ -803,159 +800,26 @@
         const modalPrizeImage = document.getElementById('modalPrizeImage');
         const modalWinnerPrizeName = document.getElementById('modalWinnerPrizeName');
 
-        const audioToggleButton = document.getElementById('audioToggleButton');
-        const visibilityToggleButton = document.getElementById('visibilityToggleButton');
-        const eyeOpenIcon = document.getElementById('eyeOpenIcon');
-        const eyeClosedIcon = document.getElementById('eyeClosedIcon');
-
-        const toggleDrawButton = document.getElementById('toggleDrawButton');
-        const rollingGrandPrizeDisplay = document.getElementById('rollingGrandPrizeDisplay');
-        const grandWinnersList = document.getElementById('grandWinnersList');
-        
         let rollingInterval;
+        let remainingNames = [...names];
         let isAudioEnabled = true;
 
         const rollingAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/y2mate.com%20-%20RULETA%20TABLERO%20FINAL%20MP4%20(1).mp3');
         rollingAudio.loop = true;
+
         const victoryAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/victory.mp3');
         victoryAudio.loop = false;
+
         const excitedAudio = new Audio('https://github.com/tiianprb0/tian-static-files/raw/refs/heads/main/excited.mp3');
         excitedAudio.loop = true;
 
-        // Fetch data from Firestore
-        async function fetchInitialData() {
-            if (!userIsReady) return;
-            try {
-                const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
-                const configSnap = await getDoc(configRef);
-                const drawConfig = configSnap.data();
-
-                if (drawConfig) {
-                    prizes = drawConfig.prizes || [];
-                    grandPrizes = drawConfig.grandPrizes || [];
-                    const allParticipantsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/participants`));
-                    allParticipants = allParticipantsSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-
-                    const winnersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/winners`));
-                    const winnerNames = winnersSnapshot.docs.map(doc => doc.data().name);
-
-                    // Filter out already won participants
-                    remainingParticipants = allParticipants.filter(p => !winnerNames.includes(p.name));
-                }
-                
-                // Get current prize from Firestore
-                const prizeStateRef = doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize');
-                const prizeStateSnap = await getDoc(prizeStateRef);
-                const prizeState = prizeStateSnap.data();
-                if (prizeState) {
-                    currentRegularPrize = prizes.find(p => p.id === prizeState.prizeId);
-                    winnerCount = prizeState.winnerCount || 0;
-                }
-
-                if (currentRegularPrize) {
-                    updateRegularDrawUI();
-                } else {
-                    initialPrizeText.textContent = "Hadiah Belum Dipilih";
-                    initialPrizeImage.src = "https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH";
-                }
-
-                // Check draw status and update UI
-                const drawStatusRef = doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus');
-                onSnapshot(drawStatusRef, (doc) => {
-                    const status = doc.data();
-                    if (status) {
-                        isDrawStarted = status.isStarted;
-                        if (isDrawStarted) {
-                             startDrawRolling(status.prizeId, status.winnerId);
-                        } else {
-                            stopDrawRolling();
-                        }
-                    }
-                });
-
-                // Listen for winner list changes
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/winners`), (snapshot) => {
-                    winnerList.innerHTML = '';
-                    if (snapshot.docs.length > 0) {
-                        const allWinners = snapshot.docs.map(d => d.data());
-                        const regularWinners = allWinners.filter(w => !w.grandPrize);
-                        regularWinners.forEach(winner => {
-                            addWinnerToList(winner);
-                        });
-                        winnerList.classList.remove('d-none');
-                    } else {
-                        winnerList.innerHTML = '<p class="placeholder-text">Pemenang akan muncul di sini</p>';
-                        winnerList.classList.remove('d-none');
-                    }
-                });
-                
-                onSnapshot(collection(db, `artifacts/${appId}/public/data/grandWinners`), (snapshot) => {
-                    grandWinnersList.innerHTML = '';
-                    if (snapshot.docs.length > 0) {
-                        const grandWinners = snapshot.docs.map(d => d.data());
-                        grandWinners.sort((a, b) => a.prizeRank - b.prizeRank);
-                        grandWinners.forEach((winner, index) => {
-                             addGrandWinnerToList(winner, index);
-                        });
-                    } else {
-                        grandPrizes.forEach((prize, index) => {
-                            const item = document.createElement('div');
-                            item.classList.add('grand-prize-list-item');
-                            item.setAttribute('data-prize-index', index);
-                            item.innerHTML = `<span class="prize-name">${prize.name}</span><span class="winner-text">Belum ada pemenang</span>`;
-                            grandWinnersList.appendChild(item);
-                        });
-                    }
-                });
-
-
-            } catch (error) {
-                console.error("Error fetching data:", error);
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
         }
-        
-        function addWinnerToList(winnerData) {
-            const winnerElement = document.createElement('div');
-            winnerElement.classList.add('winner-name');
-            winnerElement.innerHTML = `<span>${winnerData.name}</span>`;
             
-            const placeholder = winnerList.querySelector('.placeholder-text');
-            if (placeholder) {
-                placeholder.remove();
-            }
-
-            winnerList.prepend(winnerElement);
-            
-            if (isDrawStarted) {
-                winnerElement.classList.add('highlight');
-                setTimeout(() => {
-                    winnerElement.classList.remove('highlight');
-                }, 700);
-            }
-        }
-        
-        function addGrandWinnerToList(winnerData, index) {
-            const listItem = document.createElement('div');
-            listItem.classList.add('grand-prize-list-item');
-            listItem.setAttribute('data-prize-index', index);
-            listItem.classList.add(`won-${winnerData.prizeRank}`);
-            listItem.innerHTML = `<span class="prize-name">${winnerData.prizeName}</span><span class="winner-text">${winnerData.name}</span>`;
-            grandWinnersList.appendChild(listItem);
-        }
-
-        // --- UI Update Functions ---
-        function updateRegularDrawUI() {
-            if (currentRegularPrize) {
-                initialPrizeText.textContent = currentRegularPrize.name;
-                initialPrizeImage.src = currentRegularPrize.image;
-                prizeRollingText.textContent = currentRegularPrize.name;
-                prizeRollingImage.src = currentRegularPrize.image;
-            } else {
-                initialPrizeText.textContent = "Hadiah Belum Dipilih";
-                initialPrizeImage.src = "https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH";
-            }
-        }
-
         function toggleAudio() {
             isAudioEnabled = !isAudioEnabled;
             if (isAudioEnabled) {
@@ -969,17 +833,30 @@
         }
             
         function toggleButtonsVisibility() {
-            // This function is now only for UI. Remote page controls actions.
+            let isHidden;
+            if (currentDrawMode === 'regular') {
+                isHidden = buttonsContainer.classList.toggle('hidden');
+            } else {
+                isHidden = grandButtonsContainerWrapper.classList.toggle('hidden');
+            }
+
+            if (isHidden) {
+                eyeOpenIcon.classList.add('hidden');
+                eyeClosedIcon.classList.remove('hidden');
+            } else {
+                eyeOpenIcon.classList.remove('hidden');
+                eyeClosedIcon.classList.add('hidden');
+            }
         }
 
         function createParticles() {
             const particleCount = 25;
             const colors = ['white', 'gold'];
-            const particlesContainer = document.getElementById('particles-container');
 
             particlesContainer.innerHTML = '';
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
+                
                 const size = Math.random() * 2 + 1;
                 const duration = Math.random() * 10 + 10;
                 const delay = Math.random() * -duration;
@@ -1010,14 +887,32 @@
             }
         }
             
+        // Fungsi untuk mereset tampilan Lucky Draw Biasa secara penuh
+        function resetRegularDrawUI() {
+            winnerList.innerHTML = '<p class="placeholder-text">Pemenang akan muncul di sini</p>';
+            winnerList.classList.add('d-none');
+            
+            rollingSection.classList.add('d-none');
+            
+            initialDisplay.classList.remove('d-none');
+            // Menyesuaikan tampilan prizeMainDisplay saat direset
+            displayInitialPrize();
+        }
+
+        // Fungsi awal untuk menampilkan hadiah utama
+        function displayInitialPrize() {
+            sessionPrize = prizes[Math.floor(Math.random() * prizes.length)];
+            initialPrizeText.textContent = sessionPrize.name;
+        }
+        
         function showWinnerPopup(winner, prize) {
             modalWinnerName.textContent = winner;
             modalWinnerPrizeName.textContent = prize.name;
             modalPrizeImage.src = prize.image;
             winnerModal.classList.add('open');
-            // fireConfetti(); // Confetti is now triggered by the remote
+            fireConfetti();
             if (isAudioEnabled) {
-                victoryAudio.currentTime = 0;
+                victoryAudio.currentTime = 0; // Memastikan audio dimulai dari awal
                 victoryAudio.play().catch(e => console.error("Victory audio play failed:", e));
             }
         }
@@ -1027,62 +922,288 @@
             victoryAudio.pause();
             victoryAudio.currentTime = 0;
         }
-        
-        // This function is called by Firestore listener
-        function startDrawRolling(prizeId, winnerId) {
-            initialDisplay.classList.add('d-none');
-            rollingSection.classList.remove('d-none');
-            
-            const prize = prizes.find(p => p.id === prizeId);
-            if (prize) {
-                prizeRollingText.textContent = prize.name;
-                prizeRollingImage.src = prize.image;
+
+        // Fungsi untuk mengaktifkan efek konfeti
+        function fireConfetti() {
+            const myConfetti = confetti.create(confettiCanvas, {
+                resize: true,
+                useWorker: true
+            });
+            const colors = ['#D4AF37', '#FFFFFF', '#B8860B'];
+            const count = 200;
+            const defaults = {
+                origin: { y: 0.7 }
+            };
+
+            function fire(particleRatio, opts) {
+                myConfetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
             }
-            
-            const rollSpeed = 80;
-            rollingInterval = setInterval(() => {
-                const randomIndex = Math.floor(Math.random() * remainingParticipants.length);
-                const rollingName = remainingParticipants[randomIndex].name;
-                rollingDisplay.textContent = rollingName;
-            }, rollSpeed);
+
+            fire(0.25, {
+                spread: 26,
+                startVelocity: 55,
+            });
+            fire(0.2, {
+                spread: 60,
+            });
+            fire(0.35, {
+                spread: 100,
+                decay: 0.91,
+                scalar: 0.8
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 25,
+                decay: 0.92,
+                scalar: 1.2
+            });
+            fire(0.1, {
+                spread: 120,
+                startVelocity: 45,
+            });
         }
 
-        function stopDrawRolling() {
+        function startDraw() {
+            startButton.disabled = true;
+            resetButton.disabled = true;
+            winnerList.innerHTML = '';
+            
+            // Sembunyikan tampilan hadiah awal dan tampilkan tampilan rolling
+            initialDisplay.classList.add('d-none');
+            rollingSection.classList.remove('d-none');
+            winnerList.classList.remove('d-none');
+
+            // Menampilkan nama hadiah di atas rolling display
+            prizeRollingText.textContent = sessionPrize.name;
+            prizeRollingImage.src = sessionPrize.image;
+            prizeRollingDisplay.classList.remove('d-none');
+
+            shuffleArray(remainingNames);
+            
+            const firstRollDuration = 3000;
+            selectNextWinner(0, firstRollDuration);
+        }
+            
+        function selectNextWinner(winnerIndex, rollDuration) {
+            if (winnerIndex >= WINNER_COUNT || remainingNames.length === 0) {
+                startButton.disabled = false;
+                resetButton.disabled = false;
+                rollingDisplay.textContent = "Undian Selesai!";
+                rollingDisplay.classList.remove('rolling-gold');
+                rollingDisplay.classList.add('stopped-white');
+                rollingAudio.pause();
+                rollingAudio.currentTime = 0;
+                return;
+            }
+
+            if (isAudioEnabled) {
+                rollingAudio.play().catch(e => console.error("Rolling audio play failed:", e));
+            }
+
+            rollingDisplay.classList.remove('stopped-white');
+            rollingDisplay.classList.add('rolling-gold');
+            const rollSpeed = 80;
+            rollingInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * remainingNames.length);
+                const rollingName = remainingNames[randomIndex];
+                rollingDisplay.textContent = rollingName;
+            }, rollSpeed);
+            
+            setTimeout(() => {
+                clearInterval(rollingInterval);
+                rollingAudio.pause();
+                rollingAudio.currentTime = 0;
+
+                const winnerIndexInRemaining = Math.floor(Math.random() * remainingNames.length);
+                const winner = remainingNames[winnerIndexInRemaining];
+
+                rollingDisplay.textContent = winner;
+                rollingDisplay.classList.remove('rolling-gold');
+                rollingDisplay.classList.add('stopped-white');
+
+                const firstName = winner.split(' ')[0];
+                const textToSpeak = `${firstName}`;
+                if (isAudioEnabled) {
+                    const ttsUrl = `https://tts-api.netlify.app/?text=${encodeURIComponent(textToSpeak)}&lang=id&speed=1.3&pitch=0.85`;
+                    new Audio(ttsUrl).play().catch(e => console.error("TTS audio play failed:", e));
+                }
+
+                remainingNames.splice(winnerIndexInRemaining, 1);
+                
+                const winnerElement = document.createElement('div');
+                winnerElement.classList.add('winner-name');
+                winnerElement.innerHTML = `<span>${winner}</span>`;
+                
+                const placeholder = winnerList.querySelector('.placeholder-text');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+
+                winnerList.prepend(winnerElement);
+                
+                winnerElement.classList.add('highlight');
+                setTimeout(() => {
+                    winnerElement.classList.remove('highlight');
+                }, 700);
+                
+                const nextRollDuration = 700;
+                
+                setTimeout(() => {
+                    selectNextWinner(winnerIndex + 1, nextRollDuration);
+                }, 700);
+
+            }, rollDuration);
+        }
+            
+        function resetDraw() {
             clearInterval(rollingInterval);
             rollingAudio.pause();
             rollingAudio.currentTime = 0;
-            
-            const drawStatusRef = doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus');
-            getDoc(drawStatusRef).then(docSnap => {
-                const status = docSnap.data();
-                if (status && status.winnerId) {
-                    const winner = allParticipants.find(p => p.id === status.winnerId);
-                    if (winner) {
-                        rollingDisplay.textContent = winner.name;
-                        rollingDisplay.classList.remove('rolling-gold');
-                        rollingDisplay.classList.add('stopped-white');
-                        showWinnerPopup(winner.name, currentRegularPrize);
-                    }
-                }
-            });
+            remainingNames = [...names];
+            buttonsContainer.classList.remove('hidden');
+            eyeOpenIcon.classList.remove('hidden');
+            eyeClosedIcon.classList.add('hidden');
+            resetRegularDrawUI();
+            displayInitialPrize();
         }
-            
+
+        // === Fungsi Grand Lucky Draw ===
+        function initializeGrandDraw() {
+            grandWinnersList.innerHTML = '';
+            grandPrizes.forEach((prize, index) => {
+                const item = document.createElement('div');
+                item.classList.add('grand-prize-list-item');
+                item.setAttribute('data-prize-index', index);
+                item.innerHTML = `<span class="prize-name">${prize.name}</span><span class="winner-text">Belum ada pemenang</span>`;
+                grandWinnersList.appendChild(item);
+                drawGrandPrizeButtons[index].disabled = false;
+            });
+            grandPrizeWinnerDisplay.classList.add('d-none');
+            document.getElementById('rollingGrandPrizeDisplay').classList.remove('d-none');
+            document.getElementById('rollingGrandPrizeDisplay').innerHTML = `<span class="text-2xl font-['Playfair_Display'] font-normal text-gray-500">Pemenang akan muncul di sini...</span>`;
+            grandWinners = new Array(grandPrizes.length).fill(null);
+        }
+
         function toggleDrawMode() {
-            if (regularDrawContainer.classList.contains('d-none')) {
-                // Switch to Regular Draw
-                regularDrawContainer.classList.remove('d-none');
-                grandDrawContainer.classList.add('d-none');
-                toggleDrawButton.textContent = 'G'; // Show G for Grand
-                grandPrizeTitle.textContent = "Pilih Pemenang Grand Prize";
-            } else {
-                // Switch to Grand Draw
+            if (currentDrawMode === 'regular') {
                 regularDrawContainer.classList.add('d-none');
                 grandDrawContainer.classList.remove('d-none');
-                toggleDrawButton.textContent = 'B'; // Show B for Biasa
+                toggleDrawButton.textContent = 'B';
+                currentDrawMode = 'grand';
+                buttonsContainer.classList.remove('hidden');
+                grandButtonsContainerWrapper.classList.add('hidden');
+                eyeOpenIcon.classList.remove('hidden');
+                eyeClosedIcon.classList.add('hidden');
+                initializeGrandDraw();
+            } else {
+                regularDrawContainer.classList.remove('d-none');
+                grandDrawContainer.classList.add('d-none');
+                toggleDrawButton.textContent = 'G';
+                currentDrawMode = 'regular';
+                grandButtonsContainerWrapper.classList.add('hidden');
+                buttonsContainer.classList.remove('hidden');
+                eyeOpenIcon.classList.remove('hidden');
+                eyeClosedIcon.classList.add('hidden');
+                resetDraw();
             }
         }
-        
-        // Event Listeners
+
+        function startGrandDraw(prizeIndex) {
+            if (grandWinners[prizeIndex] !== null) {
+                console.log(`Pemenang untuk hadiah ke-${prizeIndex + 1} sudah terpilih.`);
+                return;
+            }
+            
+            // Play excited audio on button press
+            if (isAudioEnabled) {
+                excitedAudio.currentTime = 4.5;
+                excitedAudio.play().catch(e => console.error("Excited audio play failed:", e));
+            }
+
+            // Hide the winner display and show rolling display
+            grandPrizeWinnerDisplay.classList.add('d-none');
+            const rollingGrandDisplay = document.getElementById('rollingGrandPrizeDisplay');
+            rollingGrandDisplay.classList.remove('d-none');
+            
+            const prize = grandPrizes[prizeIndex];
+
+            // Tampilkan hadiah yang diundi
+            document.getElementById('grandPrizeTitle').textContent = `Mengundi Pemenang untuk ${prize.name}...`;
+            
+            // Nonaktifkan semua tombol grand prize selama pengundian
+            drawGrandPrizeButtons.forEach(btn => btn.disabled = true);
+            
+            // Efek rolling
+            rollingGrandDisplay.classList.remove('stopped-white');
+            rollingGrandDisplay.classList.add('rolling-gold');
+            const rollSpeed = 50;
+            const rollDuration = 5000;
+            let currentRollingName = '';
+            
+            if (isAudioEnabled) {
+                rollingAudio.play().catch(e => console.error("Rolling audio play failed:", e));
+            }
+
+            rollingInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * remainingNames.length);
+                currentRollingName = remainingNames[randomIndex];
+                rollingGrandDisplay.textContent = currentRollingName;
+            }, rollSpeed);
+
+            setTimeout(() => {
+                clearInterval(rollingInterval);
+                rollingAudio.pause();
+                rollingAudio.currentTime = 0;
+                excitedAudio.pause();
+                excitedAudio.currentTime = 0;
+
+                const winnerIndexInRemaining = Math.floor(Math.random() * remainingNames.length);
+                const winner = remainingNames[winnerIndexInRemaining];
+                
+                // Stop rolling and show winner
+                rollingGrandDisplay.textContent = winner;
+                rollingGrandDisplay.classList.remove('rolling-gold');
+                rollingGrandDisplay.classList.add('stopped-white');
+                
+                showWinnerPopup(winner, prize);
+                
+                // TTS
+                const firstName = winner.split(' ')[0];
+                const textToSpeak = `Selamat kepada ${firstName}`;
+                if (isAudioEnabled) {
+                    const ttsUrl = `https://tts-api.netlify.app/?text=${encodeURIComponent(textToSpeak)}&lang=id&speed=1.3&pitch=0.85`;
+                    new Audio(ttsUrl).play().catch(e => console.error("TTS audio play failed:", e));
+                }
+
+                // Update array dan UI
+                grandWinners[prizeIndex] = winner;
+                remainingNames.splice(winnerIndexInRemaining, 1);
+                
+                const listItem = document.querySelector(`.grand-prize-list-item[data-prize-index="${prizeIndex}"]`);
+                if (listItem) {
+                    listItem.classList.add(`won-${prizeIndex + 1}`);
+                    listItem.querySelector('.winner-text').textContent = winner;
+                }
+                
+                document.getElementById('grandPrizeTitle').textContent = "Pemenang Grand Lucky Draw";
+                
+                // Aktifkan kembali tombol-tombol yang belum dipilih
+                drawGrandPrizeButtons.forEach((btn, idx) => {
+                    if (grandWinners[idx] === null) {
+                        btn.disabled = false;
+                    } else {
+                        btn.disabled = true;
+                    }
+                });
+                
+            }, rollDuration);
+        }
+
+        // === Event Listeners ===
+        startButton.addEventListener('click', startDraw);
+        resetButton.addEventListener('click', resetDraw);
         audioToggleButton.addEventListener('click', toggleAudio);
         visibilityToggleButton.addEventListener('click', toggleButtonsVisibility);
         toggleDrawButton.addEventListener('click', toggleDrawMode);
@@ -1092,12 +1213,19 @@
                 hideWinnerPopup();
             }
         });
+        
+        // Event listener untuk tombol Grand Lucky Draw
+        drawGrandPrizeButtons[0].addEventListener('click', () => startGrandDraw(0));
+        drawGrandPrizeButtons[1].addEventListener('click', () => startGrandDraw(1));
+        drawGrandPrizeButtons[2].addEventListener('click', () => startGrandDraw(2));
             
-        window.onload = async () => {
+        // Panggil fungsi saat halaman dimuat
+        window.onload = () => {
             createParticles();
-            await authenticate();
-            fetchInitialData();
+            displayInitialPrize();
+            initializeGrandDraw();
         };
+
     </script>
 </body>
 </html>
