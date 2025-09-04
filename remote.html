@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f0f4f8;
+            color: #1a202c;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #2c5282;
+        }
+        .section {
+            margin-bottom: 2.5rem;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c5282;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #3182ce;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2b6cb0;
+        }
+        .btn-primary:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #a0aec0;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+        }
+        .prize-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .prize-item.selected {
+            border-color: #3182ce;
+            box-shadow: 0 0 10px rgba(49, 130, 206, 0.5);
+            background-color: #e2f0ff;
+        }
+        .prize-item img {
+            width: 80px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            margin-right: 1rem;
+        }
+        .prize-info h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .prize-info p {
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
+        .message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Remote Control Lucky Draw</h1>
+
+        <!-- Kontrol Lucky Draw Biasa -->
+        <div class="section">
+            <h2 class="section-title">Lucky Draw Biasa</h2>
+            <div id="prizeListContainer">
+                <!-- Hadiah akan dimuat di sini -->
+            </div>
+            <div class="flex space-x-4 mt-4">
+                <button id="startDrawBtn" class="btn-primary" disabled>Mulai Undian</button>
+                <button id="stopDrawBtn" class="btn-primary" disabled>Berhenti</button>
+                <button id="resetDrawStateBtn" class="btn-secondary">Reset Undian</button>
+            </div>
+        </div>
+
+        <!-- Kontrol Grand Lucky Draw -->
+        <div class="section">
+            <h2 class="section-title">Grand Lucky Draw</h2>
+            <div id="grandPrizeListContainer">
+                 <!-- Grand Prizes akan dimuat di sini -->
+            </div>
+            <div class="flex flex-col space-y-2 mt-4">
+                <p id="grandDrawStatus" class="text-sm text-gray-600 text-center"></p>
+                <button id="drawGrandPrizeBtn" class="btn-primary" disabled>Pilih Pemenang</button>
+                <button id="stopGrandDrawBtn" class="btn-primary" disabled>Berhenti Grand Draw</button>
+            </div>
+        </div>
+
+        <div id="statusMessage" class="message hidden"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+        // Firebase Config
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
+            authDomain: "fundayluckydraw2025.firebaseapp.com",
+            projectId: "fundayluckydraw2025",
+            storageBucket: "fundayluckydraw2025.firebasestorage.app",
+            messagingSenderId: "357768542683",
+            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
+            measurementId: "G-RXN0VTGZ8L"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const analytics = getAnalytics(app);
+
+        let userIsReady = false;
+        let userId = '';
+
+        // Token placeholder, tidak perlu diubah.
+        // const __initial_auth_token = "";
+
+        async function authenticate() {
+            try {
+                // Menggunakan otentikasi anonim secara langsung untuk menghindari error token kustom yang tidak valid
+                await signInAnonymously(auth);
+                userId = auth.currentUser.uid;
+                userIsReady = true;
+                console.log("Authentication successful, user ID:", userId);
+            } catch (error) {
+                console.error("Firebase authentication failed:", error);
+            }
+        }
+
+        let allParticipants = [];
+        let remainingParticipants = [];
+        let prizes = [];
+        let grandPrizes = [];
+        let selectedPrizeId = null;
+        let selectedGrandPrizeId = null;
+
+        const prizeListContainer = document.getElementById('prizeListContainer');
+        const grandPrizeListContainer = document.getElementById('grandPrizeListContainer');
+        const startDrawBtn = document.getElementById('startDrawBtn');
+        const stopDrawBtn = document.getElementById('stopDrawBtn');
+        const resetDrawStateBtn = document.getElementById('resetDrawStateBtn');
+        const drawGrandPrizeBtn = document.getElementById('drawGrandPrizeBtn');
+        const stopGrandDrawBtn = document.getElementById('stopGrandDrawBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const grandDrawStatus = document.getElementById('grandDrawStatus');
+
+        function showStatus(message, isSuccess = true) {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('hidden', 'success', 'error');
+            statusMessage.classList.add(isSuccess ? 'success' : 'error');
+        }
+
+        async function fetchInitialData() {
+            if (!userIsReady) return;
+            try {
+                const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                const configSnap = await getDoc(configRef);
+                const drawConfig = configSnap.data();
+
+                if (drawConfig) {
+                    prizes = drawConfig.prizes || [];
+                    grandPrizes = drawConfig.grandPrizes || [];
+                    renderPrizes();
+                    renderGrandPrizes();
+                }
+
+                // Fetch participants and winners
+                const allParticipantsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/participants`));
+                allParticipants = allParticipantsSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+
+                const winnersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/winners`));
+                const winnerNames = winnersSnapshot.docs.map(doc => doc.data().name);
+                remainingParticipants = allParticipants.filter(p => !winnerNames.includes(p.name));
+            
+                // Listen for draw status changes
+                onSnapshot(doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus'), (docSnap) => {
+                    const status = docSnap.data();
+                    if (status && status.isStarted) {
+                        startDrawBtn.disabled = true;
+                        stopDrawBtn.disabled = false;
+                        drawGrandPrizeBtn.disabled = true;
+                        stopGrandDrawBtn.disabled = true;
+                    } else {
+                        startDrawBtn.disabled = selectedPrizeId === null;
+                        stopDrawBtn.disabled = true;
+                    }
+                });
+
+                // Listen for grand draw status changes
+                onSnapshot(doc(db, `artifacts/${appId}/public/data/state`, 'grandDrawStatus'), (docSnap) => {
+                    const status = docSnap.data();
+                    if (status && status.isStarted) {
+                        drawGrandPrizeBtn.disabled = true;
+                        stopGrandDrawBtn.disabled = false;
+                        startDrawBtn.disabled = true;
+                        stopDrawBtn.disabled = true;
+                        grandDrawStatus.textContent = "Mengundi Grand Prize...";
+                    } else {
+                         drawGrandPrizeBtn.disabled = selectedGrandPrizeId === null;
+                         stopGrandDrawBtn.disabled = true;
+                         grandDrawStatus.textContent = "";
+                    }
+                });
+
+                onSnapshot(doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize'), (docSnap) => {
+                    const prizeState = docSnap.data();
+                    if (prizeState) {
+                        const prizeElement = document.querySelector(`.prize-item[data-id="${prizeState.prizeId}"]`);
+                        if (prizeElement) {
+                            document.querySelectorAll('.prize-item').forEach(el => el.classList.remove('selected'));
+                            prizeElement.classList.add('selected');
+                            selectedPrizeId = prizeState.prizeId;
+                            startDrawBtn.disabled = false;
+                        }
+                    } else {
+                        document.querySelectorAll('.prize-item').forEach(el => el.classList.remove('selected'));
+                        selectedPrizeId = null;
+                        startDrawBtn.disabled = true;
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+        
+        function renderPrizes() {
+            prizeListContainer.innerHTML = '';
+            prizes.forEach(prize => {
+                const prizeItem = document.createElement('div');
+                prizeItem.classList.add('prize-item');
+                prizeItem.setAttribute('data-id', prize.id);
+                prizeItem.innerHTML = `
+                    <img src="${prize.image}" alt="${prize.name}">
+                    <div class="prize-info">
+                        <h4>${prize.name}</h4>
+                        <p>Sisa Kuota: ${prize.remaining || 0}</p>
+                    </div>
+                `;
+                prizeItem.addEventListener('click', () => {
+                    if (prize.remaining <= 0) {
+                        showStatus("Kuota hadiah ini sudah habis.", false);
+                        return;
+                    }
+                    document.querySelectorAll('.prize-item').forEach(el => el.classList.remove('selected'));
+                    prizeItem.classList.add('selected');
+                    selectedPrizeId = prize.id;
+                    startDrawBtn.disabled = false;
+                    updateDoc(doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize'), { prizeId: selectedPrizeId, winnerCount: prize.quota });
+                });
+                prizeListContainer.appendChild(prizeItem);
+            });
+        }
+        
+        function renderGrandPrizes() {
+            grandPrizeListContainer.innerHTML = '';
+            grandPrizes.forEach(prize => {
+                const prizeItem = document.createElement('div');
+                prizeItem.classList.add('prize-item');
+                prizeItem.setAttribute('data-id', prize.id);
+                prizeItem.innerHTML = `
+                    <img src="${prize.image}" alt="${prize.name}">
+                    <div class="prize-info">
+                        <h4>${prize.name}</h4>
+                        <p>Hadiah Utama</p>
+                    </div>
+                `;
+                prizeItem.addEventListener('click', () => {
+                     document.querySelectorAll('.prize-item').forEach(el => el.classList.remove('selected'));
+                     prizeItem.classList.add('selected');
+                     selectedGrandPrizeId = prize.id;
+                     drawGrandPrizeBtn.disabled = false;
+                });
+                grandPrizeListContainer.appendChild(prizeItem);
+            });
+        }
+
+        startDrawBtn.addEventListener('click', async () => {
+            if (remainingParticipants.length === 0) {
+                showStatus("Tidak ada peserta yang tersisa.", false);
+                return;
+            }
+            if (selectedPrizeId) {
+                const prize = prizes.find(p => p.id === selectedPrizeId);
+                if (prize && prize.remaining > 0) {
+                    const winner = remainingParticipants[Math.floor(Math.random() * remainingParticipants.length)];
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus'), { isStarted: true, prizeId: selectedPrizeId, winnerId: winner.id, winnerName: winner.name, timestamp: Date.now() });
+                    showStatus("Pengundian dimulai!");
+                } else {
+                    showStatus("Kuota hadiah ini sudah habis.", false);
+                }
+            }
+        });
+        
+        stopDrawBtn.addEventListener('click', async () => {
+             await updateDoc(doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus'), { isStarted: false, timestamp: Date.now() });
+             
+             // Update winners collection and prize quota
+             const drawStatusSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus'));
+             const winnerId = drawStatusSnap.data().winnerId;
+             const winnerName = drawStatusSnap.data().winnerName;
+             const prizeId = drawStatusSnap.data().prizeId;
+             
+             await addDoc(collection(db, `artifacts/${appId}/public/data/winners`), {
+                 name: winnerName,
+                 participantId: winnerId,
+                 prizeId: prizeId,
+                 timestamp: Date.now()
+             });
+             
+             const prizeToUpdate = prizes.find(p => p.id === prizeId);
+             if (prizeToUpdate) {
+                 prizeToUpdate.remaining -= 1;
+                 const configRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
+                 await updateDoc(configRef, { prizes: prizes });
+             }
+
+             showStatus(`Undian berhenti! Pemenang: ${winnerName}`);
+        });
+        
+        resetDrawStateBtn.addEventListener('click', async () => {
+            await setDoc(doc(db, `artifacts/${appId}/public/data/state`, 'regularPrize'), { prizeId: null, winnerCount: 0 });
+            await setDoc(doc(db, `artifacts/${appId}/public/data/state`, 'drawStatus'), { isStarted: false, winnerId: null });
+            selectedPrizeId = null;
+            startDrawBtn.disabled = true;
+            stopDrawBtn.disabled = true;
+            fetchInitialData();
+            showStatus("State undian berhasil direset.");
+        });
+
+        drawGrandPrizeBtn.addEventListener('click', async () => {
+             if (remainingParticipants.length === 0) {
+                 showStatus("Tidak ada peserta yang tersisa.", false);
+                 return;
+             }
+             if (selectedGrandPrizeId) {
+                 const winner = remainingParticipants[Math.floor(Math.random() * remainingParticipants.length)];
+                 const prizeRank = grandPrizes.findIndex(p => p.id === selectedGrandPrizeId) + 1;
+                 await setDoc(doc(db, `artifacts/${appId}/public/data/state`, 'grandDrawStatus'), { 
+                    isStarted: true,
+                    prizeId: selectedGrandPrizeId,
+                    winnerId: winner.id,
+                    winnerName: winner.name,
+                    prizeRank: prizeRank,
+                    timestamp: Date.now()
+                 });
+                 showStatus("Pengundian Grand Prize dimulai!");
+             }
+        });
+        
+        stopGrandDrawBtn.addEventListener('click', async () => {
+             const drawStatusSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/state`, 'grandDrawStatus'));
+             const winnerData = drawStatusSnap.data();
+             
+             await setDoc(doc(db, `artifacts/${appId}/public/data/grandWinners`, winnerData.winnerId), {
+                 name: winnerData.winnerName,
+                 participantId: winnerData.winnerId,
+                 prizeId: winnerData.prizeId,
+                 prizeRank: winnerData.prizeRank,
+                 timestamp: Date.now()
+             });
+             
+             await updateDoc(doc(db, `artifacts/${appId}/public/data/participants`, winnerData.winnerId), {
+                 status: 'won'
+             });
+
+             await setDoc(doc(db, `artifacts/${appId}/public/data/state`, 'grandDrawStatus'), { isStarted: false });
+             
+             // Update local list of remaining participants
+             remainingParticipants = remainingParticipants.filter(p => p.id !== winnerData.winnerId);
+             
+             showStatus(`Undian Grand Prize berhenti! Pemenang: ${winnerData.winnerName}`);
+        });
+
+        window.onload = async () => {
+            await authenticate();
+            fetchInitialData();
+        };
+
+    </script>
+</body>
+</html>
