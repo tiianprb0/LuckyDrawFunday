@@ -820,13 +820,13 @@
 
         // Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
-            authDomain: "fundayluckydraw2025.firebaseapp.com",
-            projectId: "fundayluckydraw2025",
-            storageBucket: "fundayluckydraw2025.firebasestorage.app",
-            messagingSenderId: "357768542683",
-            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
-            measurementId: "G-RXN0VTGZ8L"
+            apiKey: "AIzaSyA01Obl9mGwWUQe4wvFuSpKBWJC-SetWrE",
+            authDomain: "funday-test-pls.firebaseapp.com",
+            projectId: "funday-test-pls",
+            storageBucket: "funday-test-pls.firebasestorage.app",
+            messagingSenderId: "468514863657",
+            appId: "1:468514863657:web:a1b381fa0f777c2c6ffa38",
+            measurementId: "G-8JDVNCV8FW"
         };
         
         const appId = firebaseConfig.projectId;
@@ -835,7 +835,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Array yang berisi nama-nama peserta dan hadiah (akan diisi dari Firestore)
+        // Array yang berisi nama-nama peserta dan hadiah (akan diisi dari Firestore/JSON)
         let participants = [];
         let prizes = [];
         let grandPrizes = [];
@@ -913,23 +913,34 @@
                 }
                 console.log("Firebase signed in successfully.");
                 setupFirestoreListeners();
+                fetchParticipants();
             } catch (error) {
                 console.error("Firebase sign in failed:", error);
             }
         }
+        
+        async function fetchParticipants() {
+            try {
+                const response = await fetch('https://daytian.fun/w/funday/participants.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                participants = data.participants ? data.participants : [];
+                console.log("Participants loaded from JSON:", participants.length);
+            } catch (error) {
+                console.error("Error fetching participants:", error);
+                // Handle the case where the JSON file is empty or malformed
+                participants = [];
+            }
+        }
 
         function setupFirestoreListeners() {
-            const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
             const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
             const controlDocRef = doc(db, `artifacts/${appId}/public/data/uiState`, 'control');
-
-            onSnapshot(participantsColRef, (snapshot) => {
-                participants = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-                console.log("Participants loaded:", participants.length);
-            });
-
+            
             onSnapshot(configDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
@@ -976,7 +987,6 @@
                             initialPrizeImage.src = sessionPrize.image;
                             startButton.disabled = false;
                             updateRegularWinnersList();
-                            // Optional: Close modal if it's open
                             prizeSelectModal.classList.remove('open');
                         }
                     }
@@ -993,7 +1003,6 @@
                     }
                     break;
                 case 'resetAll':
-                    // This can be used for a full reset from remote if needed
                     resetDraw();
                     break;
                 default:
@@ -1211,6 +1220,7 @@
         }
         
         async function getEligibleParticipants() {
+            await fetchParticipants(); // Fetch latest list
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
 
@@ -1476,8 +1486,8 @@
         function showPrizeSelectModal() {
             prizeListContainer.innerHTML = '';
             const eligiblePrizes = prizes.filter(p => {
-                const winnersForPrize = winners.filter(w => w.prizeName === p.name);
-                return winnersForPrize.length < p.quota;
+                const winnersForPrize = winners.filter(w => w.prizeName === p.name).length;
+                return winnersForPrize < p.quota;
             });
 
             if (eligiblePrizes.length === 0) {
