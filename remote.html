@@ -60,6 +60,21 @@
             margin-bottom: 1.5rem;
             text-align: center;
         }
+        .select-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .select-prize {
+            background-color: #3a3a3a;
+            color: #f8f8f8;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #4a4a4a;
+            font-size: 1rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -69,8 +84,14 @@
         <!-- Regular Lucky Draw Section -->
         <div id="regular-draw-section" class="mb-8">
             <h2 class="section-title">Undian Biasa</h2>
+            <div class="select-group">
+                <label for="prize-select" class="text-sm">Pilih Hadiah:</label>
+                <select id="prize-select" class="select-prize">
+                    <option value="" disabled selected>Memuat hadiah...</option>
+                </select>
+            </div>
             <div class="button-group">
-                <button id="select-prize-btn" class="button-control">Pilih Hadiah</button>
+                <!-- Tombol "Pilih Hadiah" dihapus karena diganti dengan dropdown -->
                 <button id="start-draw-btn" class="button-control">Mulai Undian</button>
             </div>
         </div>
@@ -106,21 +127,25 @@
             appId: "1:357768542683:web:221d15b60a7cd12116cffe",
             measurementId: "G-RXN0VTGZ8L"
         };
-        const appId = firebaseConfig.projectId;
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const appId = firebaseConfig.projectId;
+        const userId = 'remote-control-user'; // ID unik untuk remote
 
         // UI elements
         const startDrawBtn = document.getElementById('start-draw-btn');
-        const selectPrizeBtn = document.getElementById('select-prize-btn');
         const toggleModeBtn = document.getElementById('toggle-mode-btn');
         const drawGrand1Btn = document.getElementById('draw-grand-1-btn');
         const drawGrand2Btn = document.getElementById('draw-grand-2-btn');
         const drawGrand3Btn = document.getElementById('draw-grand-3-btn');
         const statusMessage = document.getElementById('status-message');
+        const prizeSelect = document.getElementById('prize-select');
 
+        // Firestore document references
         const controlDocRef = doc(db, `artifacts/${appId}/public/data/uiState`, 'control');
+        const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
 
         // Fungsi untuk mengirim perintah ke Firestore
         async function sendCommand(command, payload = {}) {
@@ -137,19 +162,46 @@
             }
         }
 
+        // Fungsi untuk mengisi dropdown hadiah
+        function populatePrizeSelect(prizes) {
+            prizeSelect.innerHTML = '<option value="" disabled selected>Pilih Hadiah</option>';
+            if (prizes.length === 0) {
+                 prizeSelect.innerHTML = '<option value="" disabled>Tidak ada hadiah</option>';
+            }
+            prizes.forEach(prize => {
+                const option = document.createElement('option');
+                option.value = prize.id;
+                option.textContent = `${prize.name} (Kuota: ${prize.quota})`;
+                prizeSelect.appendChild(option);
+            });
+        }
+
         // Event Listeners
         startDrawBtn.addEventListener('click', () => sendCommand('startDraw'));
-        selectPrizeBtn.addEventListener('click', () => sendCommand('showPrizeSelect'));
         toggleModeBtn.addEventListener('click', () => sendCommand('toggleMode'));
         drawGrand1Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 0 }));
         drawGrand2Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 1 }));
         drawGrand3Btn.addEventListener('click', () => sendCommand('startGrandDraw', { prizeIndex: 2 }));
+        
+        // Listener untuk dropdown hadiah
+        prizeSelect.addEventListener('change', (e) => {
+            const selectedPrizeId = e.target.value;
+            sendCommand('selectPrize', { prizeId: selectedPrizeId });
+        });
 
         // Real-time listener untuk status UI
         onSnapshot(doc(db, `artifacts/${appId}/public/data/uiState`, 'control'), (docSnap) => {
             const data = docSnap.data();
             if (data && data.status) {
                 statusMessage.textContent = `Status: ${data.status}`;
+            }
+        });
+        
+        // Real-time listener untuk daftar hadiah dari admin
+        onSnapshot(configDocRef, (docSnap) => {
+            const data = docSnap.data();
+            if (data && data.prizes) {
+                populatePrizeSelect(data.prizes);
             }
         });
 
