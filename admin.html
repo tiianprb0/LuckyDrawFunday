@@ -1,3 +1,83 @@
+<?php
+// Ganti dengan password yang aman
+const ADMIN_PASSWORD = "tiian";
+const PARTICIPANTS_FILE = 'participants.json';
+
+// Fungsi untuk membaca data dari berkas JSON
+function readParticipants() {
+    if (!file_exists(PARTICIPANTS_FILE)) {
+        return ['participants' => []];
+    }
+    $json = file_get_contents(PARTICIPANTS_FILE);
+    $data = json_decode($json, true);
+    if (!isset($data['participants']) || !is_array($data['participants'])) {
+        $data = ['participants' => []];
+    }
+    return $data;
+}
+
+// Fungsi untuk menulis data ke berkas JSON
+function writeParticipants($data) {
+    file_put_contents(PARTICIPANTS_FILE, json_encode($data, JSON_PRETTY_PRINT));
+}
+
+// Menangani permintaan POST dari formulir
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password']) && $_POST['password'] === ADMIN_PASSWORD) {
+    if (isset($_POST['action'])) {
+        $action = $_POST['action'];
+        $data = readParticipants();
+        $response = ['success' => false, 'message' => ''];
+
+        if ($action === 'add') {
+            $names = explode("\n", $_POST['names']);
+            $names = array_map('trim', $names);
+            $names = array_filter($names);
+
+            $addedCount = 0;
+            foreach ($names as $name) {
+                $isDuplicate = false;
+                foreach ($data['participants'] as $participant) {
+                    if ($participant['name'] === $name) {
+                        $isDuplicate = true;
+                        break;
+                    }
+                }
+                if (!$isDuplicate) {
+                    $data['participants'][] = ['id' => uniqid(), 'name' => $name, 'hasWon' => false, 'isGrandWinner' => false];
+                    $addedCount++;
+                }
+            }
+            writeParticipants($data);
+            $response = ['success' => true, 'message' => "Berhasil menambahkan {$addedCount} peserta."];
+        }
+
+        if ($action === 'delete') {
+            $id = $_POST['id'];
+            $initialCount = count($data['participants']);
+            $data['participants'] = array_filter($data['participants'], function ($p) use ($id) {
+                return $p['id'] !== $id;
+            });
+            $data['participants'] = array_values($data['participants']);
+            writeParticipants($data);
+            $response = ['success' => (count($data['participants']) < $initialCount), 'message' => 'Peserta berhasil dihapus.'];
+        }
+
+        if ($action === 'reset') {
+            $data['participants'] = array_map(function ($p) {
+                $p['hasWon'] = false;
+                $p['isGrandWinner'] = false;
+                return $p;
+            }, $data['participants']);
+            writeParticipants($data);
+            $response = ['success' => true, 'message' => 'Daftar pemenang berhasil di-reset.'];
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -159,7 +239,7 @@
             border-radius: 0.25rem;
         }
         
-.message-box {
+        .message-box {
             background-color: var(--green-success);
             color: white;
             padding: 1rem;
@@ -274,15 +354,17 @@
         <!-- Tab Content -->
         <div id="participants-tab" class="tab-content active">
             <h2>Kelola Peserta</h2>
-            <div class="input-group" style="flex-direction: column; align-items: stretch;">
+            <form id="addParticipantForm" style="display: flex; flex-direction: column; align-items: stretch; gap: 1rem;">
                 <label for="participantNames" style="font-weight: 600;">Tambahkan Peserta (satu nama per baris):</label>
-                <textarea id="participantNames" rows="5" placeholder="Masukkan nama-nama peserta di sini..."></textarea>
-                <button id="addParticipantButton" class="button button-primary">Tambah Peserta</button>
+                <textarea id="participantNames" name="names" rows="5" placeholder="Masukkan nama-nama peserta di sini..."></textarea>
+                <button type="submit" class="button button-primary">Tambah Peserta</button>
+            </form>
+            <div id="participantsList" class="list-container">
+                <!-- Participants will be loaded here -->
             </div>
-            <div id="participantsList" class="list-container"></div>
-            <button id="resetWinnersButton" class="button button-danger" style="width: 100%; margin-top: 1rem;">Reset Semua Pemenang</button>
+            <button id="resetParticipantsButton" class="button button-danger" style="width: 100%; margin-top: 1rem;">Reset Semua Peserta</button>
         </div>
-
+        
         <div id="regular-prizes-tab" class="tab-content">
             <h2>Kelola Hadiah Undian Biasa</h2>
             <div class="input-group">
@@ -318,18 +400,6 @@
         </div>
     </div>
     
-    <!-- Modal untuk konfirmasi reset -->
-    <div id="resetModal" class="modal">
-        <div class="modal-content">
-            <h3>Konfirmasi Reset</h3>
-            <p>Anda yakin ingin mereset semua daftar pemenang? Nama-nama yang sudah menang akan kembali ke daftar undian.</p>
-            <div class="modal-buttons">
-                <button id="confirmResetButton" class="button button-danger">Reset</button>
-                <button id="cancelResetButton" class="button button-secondary">Batal</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal untuk konfirmasi hapus pemenang -->
     <div id="deleteWinnerModal" class="modal">
         <div class="modal-content">
@@ -341,7 +411,7 @@
             </div>
         </div>
     </div>
-
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, setDoc, addDoc, deleteDoc, query, onSnapshot, where, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
@@ -353,13 +423,13 @@
 
         // Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyB_Agj4--qp073PPmtJKZADITqBi96f_ko",
-            authDomain: "fundayluckydraw2025.firebaseapp.com",
-            projectId: "fundayluckydraw2025",
-            storageBucket: "fundayluckydraw2025.firebasestorage.app",
-            messagingSenderId: "357768542683",
-            appId: "1:357768542683:web:221d15b60a7cd12116cffe",
-            measurementId: "G-RXN0VTGZ8L"
+            apiKey: "AIzaSyA01Obl9mGwWUQe4wvFuSpKBWJC-SetWrE",
+            authDomain: "funday-test-pls.firebaseapp.com",
+            projectId: "funday-test-pls",
+            storageBucket: "funday-test-pls.firebasestorage.app",
+            messagingSenderId: "468514863657",
+            appId: "1:468514863657:web:a1b381fa0f777c2c6ffa38",
+            measurementId: "G-8JDVNCV8FW"
         };
         
         const appId = firebaseConfig.projectId;
@@ -391,8 +461,9 @@
         const passwordSection = document.getElementById('passwordSection');
         const adminContent = document.getElementById('adminContent');
         const loginMessage = document.getElementById('loginMessage');
+        const addPasswordInput = document.getElementById('addPasswordInput');
+        const resetPasswordInput = document.getElementById('resetPasswordInput');
 
-        // Ganti dengan password yang aman
         const ADMIN_PASSWORD = "tiian";
         
         loginButton.addEventListener('click', () => {
@@ -400,6 +471,8 @@
                 passwordSection.style.display = 'none';
                 adminContent.style.display = 'block';
                 showAdminMessage('Selamat datang, Admin!', false);
+                addPasswordInput.value = ADMIN_PASSWORD;
+                resetPasswordInput.value = ADMIN_PASSWORD;
             } else {
                 showAdminMessage('Password salah. Silakan coba lagi.', true);
                 passwordInput.value = '';
@@ -409,10 +482,9 @@
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
 
-        const participantNamesInput = document.getElementById('participantNames');
-        const addParticipantButton = document.getElementById('addParticipantButton');
         const participantsList = document.getElementById('participantsList');
-        const resetWinnersButton = document.getElementById('resetWinnersButton');
+        const resetParticipantsButton = document.getElementById('resetParticipantsButton');
+        const addParticipantForm = document.getElementById('addParticipantForm');
 
         const prizeNameInput = document.getElementById('prizeName');
         const prizeImageInput = document.getElementById('prizeImage');
@@ -428,9 +500,6 @@
         
         const regularWinnersList = document.getElementById('regularWinnersList');
         const grandWinnersList = document.getElementById('grandWinnersList');
-        const resetModal = document.getElementById('resetModal');
-        const confirmResetButton = document.getElementById('confirmResetButton');
-        const cancelResetButton = document.getElementById('cancelResetButton');
 
         const deleteWinnerModal = document.getElementById('deleteWinnerModal');
         const confirmDeleteButton = document.getElementById('confirmDeleteButton');
@@ -466,29 +535,126 @@
                 switchTab(tab);
             });
         });
+        
+        async function fetchParticipants() {
+            try {
+                const response = await fetch('participants.json');
+                const data = await response.json();
+                renderParticipants(data.participants || []);
+            } catch (error) {
+                console.error("Error fetching participants:", error);
+                participantsList.innerHTML = '<p style="text-align: center; color: var(--red-error); font-style: italic;">Gagal memuat peserta.</p>';
+            }
+        }
+        
+        function renderParticipants(participants) {
+            participantsList.innerHTML = '';
+            if (participants.length === 0) {
+                participantsList.innerHTML = '<p style="text-align: center; color: var(--gray); font-style: italic;">Belum ada peserta.</p>';
+                return;
+            }
+            participants.forEach(p => {
+                const item = document.createElement('div');
+                item.classList.add('list-item');
+                let status = '';
+                if (p.hasWon) {
+                    status = '(Sudah Menang)';
+                } else if (p.isGrandWinner) {
+                    status = '(Pemenang Grand Prize)';
+                }
+                item.innerHTML = `
+                    <span>${p.name} ${status}</span>
+                    <form onsubmit="handleDelete(event, '${p.id}')">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="${p.id}">
+                        <input type="hidden" name="password" id="deletePasswordInput_${p.id}" value="${ADMIN_PASSWORD}">
+                        <button type="submit" class="button button-danger">Hapus</button>
+                    </form>
+                `;
+                participantsList.appendChild(item);
+            });
+        }
+        
+        async function handleDelete(event, id) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('admin.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAdminMessage(result.message);
+                    fetchParticipants();
+                } else {
+                    showAdminMessage(result.message, true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAdminMessage('Gagal menghapus peserta.', true);
+            }
+        }
+        
+        addParticipantForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(addParticipantForm);
+            formData.append('action', 'add');
+            formData.append('password', ADMIN_PASSWORD);
+
+            try {
+                const response = await fetch('admin.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAdminMessage(result.message);
+                    document.getElementById('participantNames').value = '';
+                    fetchParticipants();
+                } else {
+                    showAdminMessage(result.message, true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAdminMessage('Gagal menambahkan peserta.', true);
+            }
+        });
+
+        resetParticipantsButton.addEventListener('click', async () => {
+            if (confirm('Anda yakin ingin mereset semua daftar pemenang? Nama-nama yang sudah menang akan kembali ke daftar undian.')) {
+                const formData = new FormData();
+                formData.append('action', 'reset');
+                formData.append('password', ADMIN_PASSWORD);
+                try {
+                    const response = await fetch('admin.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showAdminMessage(result.message);
+                        fetchParticipants();
+                    } else {
+                        showAdminMessage(result.message, true);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showAdminMessage('Gagal mereset peserta.', true);
+                }
+            }
+        });
 
         function initAdmin() {
+            fetchParticipants();
+
             // Firestore data paths
             const configDocRef = doc(db, `artifacts/${appId}/public/data/config`, 'drawConfig');
-            const participantsColRef = collection(db, `artifacts/${appId}/public/data/participants`);
             const winnersColRef = collection(db, `artifacts/${appId}/public/data/winners`);
             const grandWinnersColRef = collection(db, `artifacts/${appId}/public/data/grandWinners`);
 
             // Listeners for real-time updates
-            onSnapshot(participantsColRef, (snapshot) => {
-                participantsList.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const item = document.createElement('div');
-                    item.classList.add('list-item');
-                    item.innerHTML = `
-                        <span>${data.name}</span>
-                        <button class="button button-danger delete-participant" data-id="${doc.id}">Hapus</button>
-                    `;
-                    participantsList.appendChild(item);
-                });
-            });
-            
             onSnapshot(winnersColRef, (snapshot) => {
                 regularWinnersList.innerHTML = '';
                 if (snapshot.empty) {
@@ -563,73 +729,6 @@
                     listElement.appendChild(item);
                 });
             }
-
-            // Event Handlers
-            addParticipantButton.addEventListener('click', async () => {
-                const names = participantNamesInput.value.split('\n').map(name => name.trim()).filter(name => name.length > 0);
-                if (names.length > 0) {
-                    const batch = writeBatch(db);
-                    names.forEach(name => {
-                        const newDocRef = doc(collection(db, `artifacts/${appId}/public/data/participants`));
-                        batch.set(newDocRef, { name: name });
-                    });
-                    
-                    try {
-                        await batch.commit();
-                        participantNamesInput.value = '';
-                        showAdminMessage(`${names.length} peserta berhasil ditambahkan.`);
-                    } catch (e) {
-                        console.error("Error adding participants: ", e);
-                        showAdminMessage('Gagal menambahkan peserta.', true);
-                    }
-                } else {
-                    showAdminMessage('Silakan masukkan nama peserta.', true);
-                }
-            });
-
-            participantsList.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('delete-participant')) {
-                    const id = e.target.getAttribute('data-id');
-                    try {
-                        await deleteDoc(doc(participantsColRef, id));
-                        showAdminMessage('Peserta berhasil dihapus.');
-                    } catch (e) {
-                        console.error("Error removing participant: ", e);
-                        showAdminMessage('Gagal menghapus peserta.', true);
-                    }
-                }
-            });
-            
-            resetWinnersButton.addEventListener('click', () => {
-                resetModal.style.display = 'flex';
-            });
-            
-            cancelResetButton.addEventListener('click', () => {
-                resetModal.style.display = 'none';
-            });
-            
-            confirmResetButton.addEventListener('click', async () => {
-                resetModal.style.display = 'none';
-                try {
-                    const batch = writeBatch(db);
-                    
-                    const winnersSnap = await getDocs(winnersColRef);
-                    winnersSnap.forEach(d => {
-                        batch.delete(d.ref);
-                    });
-
-                    const grandWinnersSnap = await getDocs(grandWinnersColRef);
-                    grandWinnersSnap.forEach(d => {
-                        batch.delete(d.ref);
-                    });
-                    
-                    await batch.commit();
-                    showAdminMessage('Berhasil mereset semua pemenang.');
-                } catch (e) {
-                    console.error("Error resetting winners:", e);
-                    showAdminMessage('Gagal mereset pemenang.', true);
-                }
-            });
 
             regularWinnersList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-winner')) {
