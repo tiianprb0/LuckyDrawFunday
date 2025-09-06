@@ -959,7 +959,7 @@
             
         function processRemoteCommand(data) {
             console.log("Received remote command:", data);
-            const { command, prizeIndex } = data;
+            const { command, prizeIndex, prizeId } = data;
             
             switch(command) {
                 case 'startDraw':
@@ -967,10 +967,22 @@
                         startDraw();
                     }
                     break;
-                case 'showPrizeSelect':
-                    if (currentDrawMode === 'regular') {
-                        showPrizeSelectModal();
+                case 'selectPrize':
+                    if (currentDrawMode === 'regular' && prizeId) {
+                        const selectedPrize = prizes.find(p => p.id === prizeId);
+                        if (selectedPrize) {
+                            sessionPrize = selectedPrize;
+                            initialPrizeText.textContent = sessionPrize.name;
+                            initialPrizeImage.src = sessionPrize.image;
+                            startButton.disabled = false;
+                            updateRegularWinnersList();
+                            // Optional: Close modal if it's open
+                            prizeSelectModal.classList.remove('open');
+                        }
                     }
+                    break;
+                case 'closePrizeSelectModal':
+                    prizeSelectModal.classList.remove('open');
                     break;
                 case 'toggleMode':
                     toggleDrawMode();
@@ -1020,7 +1032,8 @@
         
         function updateGrandWinnersList() {
             grandWinnersList.innerHTML = '';
-            grandPrizes.forEach(prize => {
+            grandPrizes.sort((a,b) => a.rank - b.rank);
+            grandPrizes.forEach((prize) => {
                 const winner = grandWinners.find(w => w.prizeName === prize.name);
                 const item = document.createElement('div');
                 item.classList.add('grand-prize-list-item');
@@ -1029,6 +1042,10 @@
                      item.classList.add(`won-${prize.rank}`);
                 }
                 grandWinnersList.appendChild(item);
+                const button = drawGrandPrizeButtons.find(btn => btn.id === `drawGrandPrize${prize.rank}`);
+                if (button) {
+                    button.disabled = !!winner;
+                }
             });
         }
 
@@ -1124,8 +1141,11 @@
                 initialPrizeImage.src = 'https://placehold.co/800x600/D4AF37/0e2a25?text=HADIAH';
                 return;
             }
-            const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
-            sessionPrize = randomPrize;
+            if (!sessionPrize) {
+                // If no prize is selected, default to a random one
+                const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
+                sessionPrize = randomPrize;
+            }
             initialPrizeText.textContent = sessionPrize.name;
             initialPrizeImage.src = sessionPrize.image;
         }
